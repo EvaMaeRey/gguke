@@ -14,17 +14,20 @@ knitr::opts_chunk$set(
 # gguke
 
 <!-- badges: start -->
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
-The goal of gguke is to ...
+{gguke} will provide tools for visualizing ukelele chords with lyrics. This is for people that aren't so good at ukelele; they may not really know the chords yet.  It's a chord-first approach to song charts, which might have only chord names or small finger position.  
 
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
+And because we make it with ggplot2, we can do a lot with customization.  For example, fingers get assigned a color using the viridis palette. 
 
+This is currently a [{readme2pkg}]() project; we're writing in a kind-of stream of consciousness way, bundling up useful code into functions as we go in our README.rmd narrative, and then sending written-up functions to our R folder with knitr/rmd magic. Our commitment to keeping things as they are is low at this point, but it is a real package.  Lifecycle is *early* experimental. See also [{litr}](). 
 
+Beyond the descriptions of our work, we interject comments on our hesitations 🤔 and areas that need some work 🚧, for your consideration marked with emoji.
+
+### First, something I'm very excited about, a chord ingestion proposal...!
 
 ```{r cars}
-
-
 CM <- 
 "pppp
 ----
@@ -33,50 +36,101 @@ CM <-
 
 
 library(tidyverse)
+```
 
+
+### Then translate that to data frame that records string, fret, and finger that will play each note.
+
+```{r}
 parse_chord <- function(chord = CM){
 
 play_TF <- chord |> stringr::str_split("") %>%  .[[1]] %>% .[1:4]
+
 chart <- chord |> stringr::str_split("") %>%  .[[1]] %>% .[5:length(.)] 
-
 num_frets <- length(chart)/5
-
 string <- rep(1:4, num_frets)
 fret <- sort(rep(1:num_frets, 4))
 
 data.frame(finger = chart) %>% 
-  filter(finger != "\n") %>% 
-  mutate(fret = fret) %>% 
-  mutate(string = string) %>% 
-  mutate(finger = ifelse(finger == "-", NA, finger) %>% as.numeric()) %>% 
-  filter(!is.na(finger)) ->
+  dplyr::filter(finger != "\n") %>% 
+  dplyr::mutate(fret = fret) %>% 
+  dplyr::mutate(string = string) %>% 
+  dplyr::mutate(finger = ifelse(.data$finger == "-", NA, finger) %>% as.numeric()) %>% 
+  dplyr::filter(!is.na(finger)) ->
 fingering_df
 
 list(play_tf = play_TF, 
      fingering_df = fingering_df)
 
 }
+```
+
+```{r}
+
+# play or not for each string
+parse_chord()[[1]]
+
+# dataframe with finger placement info
+parse_chord()[[2]]
+
+
+```
+
+🤔 maybe read.delim(delim = ""), would work better and feel more grokable that this string split business! :-)
 
 
 
-library(ggstamp)
-ggstamp::ggcanvas() + 
-  stamp_segment(x = 1:4, y = .5, xend = 1:4, yend = 5) + 
-  stamp_segment(y = 0:4 +.5, yend = 0:4 +.5, x = 1, xend = 4) + 
+```{r, eval = T}
+usethis::use_pipe()
+readme2pkg::chunk_to_r("parse_chord")
+```
+
+# then we make a fret board. 
+
+```{r}
+library(ggplot2)
+ggplot() + 
+  annotate(geom = "segment", x = 1:4, y = .5, 
+           xend = 1:4, yend = 5, linewidth = 3) + 
+  annotate(geom = "segment", y = 0:4 +.5, 
+           yend = 0:4 +.5, x = 1, xend = 4, linewidth = 3) + 
   scale_y_reverse() + 
+  scale_x_continuous(expand = expansion(.2)) +
   theme_void() + 
-  scale_fill_viridis_c(limits = c(1,4), guide = F) +
-  NULL ->
-background 
+  coord_equal() +
+  scale_fill_viridis_c(limits = c(1,4), guide = F)
+```
 
 
-FM <- 
-"pppp
---1-
-2---
-----"
+```{r uke_fretboard}
+uke_fretboard <- function(){
+  
+  ggplot() + 
+  annotate(geom = "segment", x = 1:4, y = .5, 
+           xend = 1:4, yend = 5, linewidth = 3) + 
+  annotate(geom = "segment", y = 0:4 +.5, 
+           yend = 0:4 +.5, x = 1, xend = 4, linewidth = 3) + 
+  scale_y_reverse() + 
+  scale_x_continuous(expand = expansion(.2)) +
+  theme_void() + 
+  coord_equal() +
+  scale_fill_viridis_c(limits = c(1,4), guide = F) 
+  
+}
+```
 
-background + 
+🤔 maybe gguke() would be better
+🤔 maybe a coord_uke could be a long-term goal.
+
+```{r, eval = T}
+readme2pkg::chunk_to_r("uke_fretboard")
+```
+
+
+## now we'll place fingers positions w/ point and text
+
+```{r}
+uke_fretboard() + 
   geom_point(data = parse_chord()[[2]],
              size = 15, 
              aes(x = string, y = fret),
@@ -90,13 +144,13 @@ background +
   geom_text(data = parse_chord()[[2]],
              size = 10,
              aes(x = string, y = fret, label = finger)
-             ) + 
-  labs(caption = "Come stop your cryin', it'll be all right" %>% str_wrap(20)) + 
-  theme(text = element_text(size = 18))
+             )
 ```
 
 
-```{r}
+### looks great! Make a function 
+
+```{r add_chord_fingering}
 add_chord_fingering <- function(chord = CM){
   
    list(  geom_point(data = parse_chord(chord)[[2]],
@@ -115,25 +169,67 @@ add_chord_fingering <- function(chord = CM){
              )
    )
 }
-  
+```  
+
+```{r, eval = T}
+readme2pkg::chunk_to_r("add_chord_fingering")
+```
+
+## Okay, we want to pair lyrics with the chord
+
+```{r} 
+uke_fretboard() +
+  add_chord_fingering() +
+  labs(caption = "Come stop your cryin', it'll be all right" %>% str_wrap(28)) + 
+  theme(text = element_text(size = 23))
+```
+
+
+### looks good... make it a function! 
+
+```{r add_lyric}
+
 add_lyric <- function(lyric = "Come stop your cryin', it'll be all right"){
   
     list(labs(caption = lyric %>% str_wrap(28)),
-    theme(text = element_text(size = 23)))
+         theme(text = element_text(size = 23)))
   
   
 }
+```
 
-background + 
+
+```{r, eval = T}
+readme2pkg::chunk_to_r("add_lyric")
+```
+
+### try it out...
+
+```{r}
+uke_fretboard() + 
   add_chord_fingering(CM) + 
   add_lyric("Just take my hand and hold it tight")
-  
+```  
 
+### and with new chord input
 
-background + 
+```{r}
+
+FM <- 
+"pppp
+--1-
+2---
+----"
+
+uke_fretboard() + 
   add_chord_fingering(FM) + 
   add_lyric("I will protect you from all around you")
+```
 
+
+# and a bunch more chords and lyrics!
+
+```{r}
 Dm <- 
 "pppp
 --1-
@@ -141,7 +237,7 @@ Dm <-
 ----"
 
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(Dm) + 
   add_lyric("I will be here don't you ...")
 
@@ -153,30 +249,30 @@ GM <-
 --3-"
 
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(GM) + 
   add_lyric(" ... cry")
 
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(CM) + 
   add_lyric("For one so small, you seem so strong")
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(CM) + 
   add_lyric("My arms will hold you keep you safe and warm")
 
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(FM) + 
   add_lyric("This bond between us can't be broken")
 
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(Dm) + 
   add_lyric("I will be here don't you ...")
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(GM) + 
   add_lyric("... cry")
 
@@ -186,7 +282,7 @@ E7M <-
 -2-3
 ----"
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(E7M) + 
   add_lyric("... ")
 
@@ -197,7 +293,7 @@ AM <-
 2---
 ----"
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(AM) + 
   add_lyric("You'll be in my ...")
 
@@ -209,11 +305,11 @@ DM <-
 123-
 ----"
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(DM) + 
   add_lyric("... heart")
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(E7M) + 
   add_lyric("You'll be in my ...")
 
@@ -227,27 +323,27 @@ Dbm <-
 ----"
 
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(Dbm) + 
   add_lyric(" ... heart")
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(AM)  + 
   add_lyric("From this day on ")
 
 
 
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(DM)  + 
   add_lyric("Now and forever")
 
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(GM)  + 
   add_lyric(" ... more")
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(E7M)  + 
   add_lyric(" ...")
 
@@ -263,52 +359,238 @@ Fsm <-
 ----"
 
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(Fsm)
 
-background + 
+uke_fretboard() + 
   add_chord_fingering(GM)
 
 ```
 
 
-```{r, eval = F}
-lyric_chord_df <- tribble(~lyric, ~chord_name,
+## Lets include the chords as data in the package
+
+
+
+```{r}
+usethis::use_data(CM, overwrite = T)
+usethis::use_data(FM, overwrite = T)
+usethis::use_data(Dm, overwrite = T)
+usethis::use_data(GM, overwrite = T)
+usethis::use_data(E7M, overwrite = T)
+usethis::use_data(AM, overwrite = T)
+usethis::use_data(DM, overwrite = T)
+usethis::use_data(Dbm, overwrite = T)
+usethis::use_data(Fsm, overwrite = T)
+```
+
+
+```{r data}
+"CM"
+"FM"
+"Dm"
+"GM"
+"E7M"
+"AM"
+"DM"
+"Dbm"
+```
+
+# next steps...
+
+```{r}
+library(tidyverse)
+library(gguke)
+lyric_chord_df <- tibble::tribble(~lyric, ~chord_name,
         "Come stop your cryin', it'll be all right", "CM",
-"Come stop your crying
-It will be alright
-Just take my hand
-Hold it tight
-I will protect you
-From all around you
-I will be here
-Don't you cry
-For one so small
-You seem so strong
-My arms will hold you
-Keep you safe and warm
-This bond between us
-Can't be broken
-I will be here don't you cry
-'Cause you'll be in my heart
-Yes, you'll be in my heart
-From this day on
-Now and forever more
-You'll be in my heart
-No matter what they say
-You'll be here in my heart
-Always  "      
-        )
+"Just take my hand, hold it tight", "CM",
+"I will protect you, from all around you", "FM",
+"I will be here, don't you ","Dm",
+"...cry" , "GM" )
 
+parse_chord2 <- function(chord){parse_chord(chord)[[2]]}
+
+Dm
+lyric_chord_df %>% 
+  mutate(phrase = row_number()) %>% 
+  mutate(fingering_str = map(chord_name, get)) %>% 
+  unnest(cols = c(fingering_str)) %>% 
+  mutate(fingering = map(fingering_str, parse_chord2)) %>% 
+  unnest(cols = c(fingering)) %>% 
+  ggplot() +
+  annotate(geom = "segment", x = 1:4, y = .5, 
+           xend = 1:4, yend = 5, linewidth = 1) + 
+  annotate(geom = "segment", y = 0:4 +.5, 
+           yend = 0:4 +.5, x = 1, xend = 4, linewidth = 1) +
+  aes(x = string, y = fret, label = finger) + 
+  geom_point(size = 6, color = "white") +
+  geom_point(size = 6, pch= 21, aes(fill = finger), alpha = .7 , show.legend = F) +
+  geom_text() +
+  facet_wrap(~ paste0("phrase ", phrase,": ", chord_name) %>% fct_inorder()) + 
+  geom_text(data = . %>% select(phrase, lyric, chord_name) %>% distinct(),
+            x = 1, y = -5.5, size = 3,
+            aes(label = lyric %>% str_wrap(28)),
+            hjust = 0,
+            vjust = 1) + 
+  scale_y_reverse(limits = c(7, .5)) + 
+  coord_equal() + 
+  scale_fill_viridis_c(end = .9) + 
+  scale_x_continuous(expand = expansion(.6)) + 
+  theme_void()
+
+
+uke_fretboard
 
 ```
 
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this. You could also use GitHub Actions to re-render `README.Rmd` every time you push. An example workflow can be found here: <https://github.com/r-lib/actions/tree/v1/examples>.
+# Part II. Packaging and documentation  🚧 ✅ 
 
-You can also embed plots, for example:
+## Phase 1. Minimal working package
 
-```{r pressure, echo = FALSE}
-plot(pressure)
+### Created files for package archetecture with `devtools::create(".")` ✅ 
+
+### Moved functions R folder? ✅  
+
+```{r}
+knitr::knit_code$get() |> names()
 ```
 
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub.
+Use new {readme2pkg} function to do this from readme if you haven't already
+
+```{r, eval = F}
+readme2pkg::chunk_to_r("")
+```
+
+### Added roxygen skeleton? ✅ 
+
+Use a roxygen skeleton for auto documentation and making sure proposed functions are *exported*.
+
+### Managed dependencies ? ✅ 
+
+Package dependencies managed, i.e. `depend::function()` in proposed functions and declared in the DESCRIPTION
+
+```{r}
+usethis::use_package("ggplot2")
+usethis::use_package("dplyr")
+```
+
+
+
+### Chosen a license? ✅ 
+
+
+```{r, eval=F}
+usethis::use_mit_license()
+```
+
+### Run `devtools::check()` and addressed errors? ✅ 
+
+```{r, results='hide', error=T}
+devtools::check(pkg = ".")
+```
+
+### Build package 🚧 
+
+```{r}
+devtools::build()
+```
+
+You need to do this before Part 0 in this document will work.
+
+### Make aspirational part of readme real. 🚧 
+
+At this point, you could change eval chunk options to TRUE. You can remove  the 🦄 emoji and perhaps replace it with construction site if you are still uncertain of the API, and want to highlight that it is subject to change. 
+
+### Add lifecycle badge (experimental)
+
+```{r}
+usethis::use_lifecycle_badge("experimental")
+```
+
+
+## Phase 2: Listen & iterate 🚧 
+
+Try to get feedback from experts on API, implementation, default decisions.  Is there already work that solves this problem? 
+
+
+## Phase 3: Let things settle
+
+### Settle on examples.  Put them in the roxygen skeleton and readme. 🚧 
+
+### Written formal tests of functions? 🚧 
+
+
+That would look like this...
+
+```{r test_calc_frequency_works, eval=F}
+library(testthat)
+
+test_that("calc frequency works", {
+  expect_equal(calc_frequency("A", 0), 440)
+  expect_equal(calc_frequency("A", -1), 220)
+  
+})
+```
+
+
+```{r, eval = F}
+readme2pkg::chunk_to_tests_testthat("test_calc_frequency_works")
+```
+
+
+### Have you worked added a description and author information in the DESCRIPTION file? 🚧 
+
+### Addressed *all* notes, warnings and errors. 🚧 
+
+## Promote to wider audience...
+
+### Package website built? 🚧 
+
+### Package website deployed? 🚧 
+
+## Phase 3: Harden/commit
+
+### Submit to CRAN? Or don't.  🚧 
+
+# Appendix: Reports, Environment
+
+## Description file extract
+
+```{r}
+
+```
+
+## Environment
+
+Here I just want to print the packages and the versions
+
+```{r}
+all <- sessionInfo() |> print() |> capture.output()
+all[11:17]
+```
+
+## `devtools::check()` report
+
+```{r, error = T, results="hide", warning=F}
+devtools::check(pkg = ".")
+```
+
+```{r}
+devtools::build(".")
+```
+
+# test functions from package, use :: (or :::)
+
+```{r}
+library(gguke)
+Fsm
+
+gguke:::uke_fretboard() + 
+  gguke:::add_chord_fingering() + 
+  gguke:::add_lyric()
+
+
+gguke:::uke_fretboard() + 
+  gguke:::add_chord_fingering(Fsm) + 
+  gguke:::add_lyric("a different lyric")
+```
