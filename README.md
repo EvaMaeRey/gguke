@@ -28,7 +28,7 @@ Beyond the descriptions of our work, we interject comments on our
 hesitations 🤔 and areas that need some work 🚧, for your consideration
 marked with emoji.
 
-### First, something I’m very excited about, a chord ingestion proposal…\!
+### First, something I’m very excited about, a new-chord ingestion proposal… - it’s just text\!
 
 ``` r
 CM <- 
@@ -278,62 +278,6 @@ GM <-
 --3-"
 
 
-uke_fretboard() + 
-  add_chord_fingering(GM) + 
-  add_lyric(" ... cry")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-2.png)<!-- -->
-
-``` r
-
-
-uke_fretboard() + 
-  add_chord_fingering(CM) + 
-  add_lyric("For one so small, you seem so strong")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-3.png)<!-- -->
-
-``` r
-
-uke_fretboard() + 
-  add_chord_fingering(CM) + 
-  add_lyric("My arms will hold you keep you safe and warm")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-4.png)<!-- -->
-
-``` r
-
-
-uke_fretboard() + 
-  add_chord_fingering(FM) + 
-  add_lyric("This bond between us can't be broken")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-5.png)<!-- -->
-
-``` r
-
-
-uke_fretboard() + 
-  add_chord_fingering(Dm) + 
-  add_lyric("I will be here don't you ...")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-6.png)<!-- -->
-
-``` r
-
-uke_fretboard() + 
-  add_chord_fingering(GM) + 
-  add_lyric("... cry")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-7.png)<!-- -->
-
-``` r
 
 E7M <- 
 "pppp
@@ -341,30 +285,12 @@ E7M <-
 -2-3
 ----"
 
-uke_fretboard() + 
-  add_chord_fingering(E7M) + 
-  add_lyric("... ")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-8.png)<!-- -->
-
-``` r
-
 
 AM <- 
 "pppp
 -1--
 2---
 ----"
-
-uke_fretboard() + 
-  add_chord_fingering(AM) + 
-  add_lyric("You'll be in my ...")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-9.png)<!-- -->
-
-``` r
 
 
 
@@ -374,110 +300,23 @@ DM <-
 123-
 ----"
 
-uke_fretboard() + 
-  add_chord_fingering(DM) + 
-  add_lyric("... heart")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-10.png)<!-- -->
-
-``` r
-
-uke_fretboard() + 
-  add_chord_fingering(E7M) + 
-  add_lyric("You'll be in my ...")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-11.png)<!-- -->
-
-``` r
-
-
-
-
 Dbm <- 
 "pppp
 12--
 ----
 ----"
 
-
-uke_fretboard() + 
-  add_chord_fingering(Dbm) + 
-  add_lyric(" ... heart")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-12.png)<!-- -->
-
-``` r
-
-uke_fretboard() + 
-  add_chord_fingering(AM)  + 
-  add_lyric("From this day on ")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-13.png)<!-- -->
-
-``` r
-
-
-
-
-uke_fretboard() + 
-  add_chord_fingering(DM)  + 
-  add_lyric("Now and forever")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-14.png)<!-- -->
-
-``` r
-
-
-uke_fretboard() + 
-  add_chord_fingering(GM)  + 
-  add_lyric(" ... more")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-15.png)<!-- -->
-
-``` r
-
-uke_fretboard() + 
-  add_chord_fingering(E7M)  + 
-  add_lyric(" ...")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-16.png)<!-- -->
-
-``` r
-
-###################
-
-
-
-
 Fsm <- 
 "pppp
 -1--
 2-3-
 ----"
-
-
-uke_fretboard() + 
-  add_chord_fingering(Fsm)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-13-17.png)<!-- -->
+## Lets include the chords as data in the package. We can add some more later. Also, you can overwrite what’s here, if there is a better fingering.
 
-``` r
-
-uke_fretboard() + 
-  add_chord_fingering(GM)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-18.png)<!-- -->
-
-## Lets include the chords as data in the package
+Would like to use \# but using s for sharp since \# is a special
+character… Feels a little wierd.
 
 ``` r
 usethis::use_data(CM, overwrite = T)
@@ -526,6 +365,8 @@ usethis::use_data(Fsm, overwrite = T)
 #> [1] "DM"
 "Dbm"
 #> [1] "Dbm"
+"Fsm"
+#> [1] "Fsm"
 ```
 
 # next steps…
@@ -538,18 +379,45 @@ lyric_chord_df <- tibble::tribble(~lyric, ~chord_name,
 "Just take my hand, hold it tight", "CM",
 "I will protect you, from all around you", "FM",
 "I will be here, don't you ","Dm",
-"...cry" , "GM" )
+"...cry" , "GM" ,
+" ", "E7M",
+"'Cause you'll be in my ... heart", "AM",
+"... heart", "DM",
+"Yes, you'll be in my heart", "E7M",
+"... heart", "Dbm", 
+"From this day on", "AM",
+"Now and forever... more", "DM",
+"... more", "GM",
+"...", "E7M",
+"You'll be in my ...", "AM",
+"... heart", "DM",
+"No matter what they ...", "E7M",
+"say", "Dbm", 
+"You'll be here in my... ", "AM", 
+" heart", "DM",
+"Always", "GM")
+
+lyric_chord_df %>% pull(chord_name) %>% unique()
+#> [1] "CM"  "FM"  "Dm"  "GM"  "E7M" "AM"  "DM"  "Dbm"
+
 
 parse_chord2 <- function(chord){parse_chord(chord)[[2]]}
 
 Dm
 #> [1] "pppp\n--1-\n23--\n----"
-lyric_chord_df %>% 
+lyric_chord_df[1:6,] %>% #just vis first six lyric-chord pairs
   mutate(phrase = row_number()) %>% 
-  mutate(fingering_str = map(chord_name, get)) %>% 
+  mutate(fingering_str = map(chord_name, get)) ->
+lyric_chord_df_flat
+
+
+lyric_chord_df_flat %>% 
   unnest(cols = c(fingering_str)) %>% 
   mutate(fingering = map(fingering_str, parse_chord2)) %>% 
-  unnest(cols = c(fingering)) %>% 
+  unnest(cols = c(fingering)) ->
+lyric_chord_df_fingering
+  
+lyric_chord_df_fingering %>% 
   ggplot() +
   annotate(geom = "segment", x = 1:4, y = .5, 
            xend = 1:4, yend = 5, linewidth = 1) + 
@@ -560,7 +428,7 @@ lyric_chord_df %>%
   geom_point(size = 6, pch= 21, aes(fill = finger), alpha = .7 , show.legend = F) +
   geom_text() +
   facet_wrap(~ paste0("phrase ", phrase,": ", chord_name) %>% fct_inorder()) + 
-  geom_text(data = . %>% select(phrase, lyric, chord_name) %>% distinct(),
+  geom_text(data = lyric_chord_df_flat,
             x = 1, y = -5.5, size = 3,
             aes(label = lyric %>% str_wrap(28)),
             hjust = 0,
@@ -576,23 +444,100 @@ lyric_chord_df %>%
 
 ``` r
 
+ggwipe::last_plot_wipe(index = 4) + 
+    geom_point(size = 6, pch= 21, fill = alpha("white", 0), show.legend = F) 
+```
 
-uke_fretboard
-#> function(){
-#>   
-#>   ggplot() + 
-#>   annotate(geom = "segment", x = 1:4, y = .5, 
-#>            xend = 1:4, yend = 5, linewidth = 3) + 
-#>   annotate(geom = "segment", y = 0:4 +.5, 
-#>            yend = 0:4 +.5, x = 1, xend = 4, linewidth = 3) + 
-#>   scale_y_reverse() + 
-#>   scale_x_continuous(expand = expansion(.2)) +
-#>   theme_void() + 
-#>   coord_equal() +
-#>   scale_fill_viridis_c(limits = c(1,4), guide = F) 
-#>   
-#> }
-#> <bytecode: 0x7fc82756ba68>
+![](README_files/figure-gfm/unnamed-chunk-15-2.png)<!-- -->
+
+### excited to put in a function\!
+
+``` r
+
+parse_chord2 <- function(chord){parse_chord(chord)[[2]]}
+
+
+lyric_chord_df_to_chart <- function(lyric_chord_df, bw = F){
+  
+  lyric_chord_df %>% 
+  mutate(phrase = row_number()) %>% 
+  mutate(fingering_str = map(chord_name, get)) ->
+lyric_chord_df_flat
+
+lyric_chord_df_flat %>% 
+  unnest(cols = c(fingering_str)) %>% 
+  mutate(fingering = map(fingering_str, parse_chord2)) %>% 
+  unnest(cols = c(fingering)) ->
+lyric_chord_df_fingering
+  
+lyric_chord_df_fingering %>% 
+  ggplot() +
+  annotate(geom = "segment", x = 1:4, y = .5, 
+           xend = 1:4, yend = 5, linewidth = 1) + 
+  annotate(geom = "segment", y = 0:4 +.5, 
+           yend = 0:4 +.5, x = 1, xend = 4, linewidth = 1) +
+  aes(x = string, y = fret, label = finger) + 
+  geom_point(size = 6, color = "white") +
+  geom_point(size = 6, pch= 21, aes(fill = finger), alpha = .7 , show.legend = F) +
+  geom_text() +
+  facet_wrap(~ paste0("phrase ", phrase,": ", chord_name) %>% fct_inorder()) + 
+  geom_text(data = lyric_chord_df_flat,
+            x = 1, y = -5.5, size = 3,
+            aes(label = lyric %>% str_wrap(28)),
+            hjust = 0,
+            vjust = 1) + 
+  scale_y_reverse(limits = c(7, .5)) + 
+  coord_equal() + 
+  scale_fill_viridis_c(end = .9) + 
+  scale_x_continuous(expand = expansion(.6)) + 
+  theme_void()
+
+
+if(bw){
+ggwipe::last_plot_wipe(index = 4) + 
+    geom_point(size = 6, pch= 21, fill = alpha("white", 0), show.legend = F) 
+}
+  
+
+}
+```
+
+``` r
+readme2pkg::chunk_to_r("lyric_chord_df_to_chart")
+```
+
+``` r
+lyric_chord_df_to_chart(lyric_chord_df[1:6,], bw = T)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
+``` r
+lyric_chord_df_to_chart(lyric_chord_df[7:12,], bw = T)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-17-2.png)<!-- -->
+
+``` r
+lyric_chord_df_to_chart(lyric_chord_df[13:18,], bw = T)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-17-3.png)<!-- -->
+
+``` r
+lyric_chord_df_to_chart(lyric_chord_df[19:21,], bw = T)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-17-4.png)<!-- -->
+
+``` r
+
+a_cool_song <- tibble::tribble(~lyric, ~chord_name,
+                       "This is my cool lyric", "CM",
+                       "This is another", "DM",
+                       "hi", "AM")
+
+lyric_chord_df_to_chart(lyric_chord_df = a_cool_song)
 ```
 
 # Part II. Packaging and documentation 🚧 ✅
@@ -615,13 +560,15 @@ knitr::knit_code$get() |> names()
 #> [15] "unnamed-chunk-11"          "unnamed-chunk-12"         
 #> [17] "unnamed-chunk-13"          "unnamed-chunk-14"         
 #> [19] "data"                      "unnamed-chunk-15"         
-#> [21] "unnamed-chunk-16"          "unnamed-chunk-17"         
-#> [23] "unnamed-chunk-18"          "unnamed-chunk-19"         
-#> [25] "unnamed-chunk-20"          "unnamed-chunk-21"         
-#> [27] "unnamed-chunk-22"          "test_calc_frequency_works"
+#> [21] "lyric_chord_df_to_chart"   "unnamed-chunk-16"         
+#> [23] "unnamed-chunk-17"          "unnamed-chunk-18"         
+#> [25] "unnamed-chunk-19"          "unnamed-chunk-20"         
+#> [27] "unnamed-chunk-21"          "unnamed-chunk-22"         
 #> [29] "unnamed-chunk-23"          "unnamed-chunk-24"         
-#> [31] "unnamed-chunk-25"          "unnamed-chunk-26"         
-#> [33] "unnamed-chunk-27"          "unnamed-chunk-28"
+#> [31] "test_calc_frequency_works" "unnamed-chunk-25"         
+#> [33] "unnamed-chunk-26"          "unnamed-chunk-27"         
+#> [35] "unnamed-chunk-28"          "unnamed-chunk-29"         
+#> [37] "unnamed-chunk-30"
 ```
 
 Use new {readme2pkg} function to do this from readme if you haven’t
@@ -786,7 +733,7 @@ gguke:::uke_fretboard() +
   gguke:::add_lyric()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
 
 ``` r
 
@@ -796,4 +743,14 @@ gguke:::uke_fretboard() +
   gguke:::add_lyric("a different lyric")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-28-2.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-30-2.png)<!-- -->
+
+``` r
+
+
+
+
+gguke:::lyric_chord_df_to_chart(lyric_chord_df)
+
+lyric_chord_df_to_chart(lyric_chord_df)
+```
