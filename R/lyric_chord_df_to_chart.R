@@ -25,7 +25,7 @@ lyric_chord_df_fingering %>%
   geom_point(size = 6, color = "white") +
   geom_point(size = 6, pch= 21, aes(fill = finger), alpha = .7 , show.legend = F) +
   geom_text() +
-  facet_wrap(~ paste0("phrase ", phrase,": ", chord_name) %>% fct_inorder()) + 
+  facet_wrap(~ paste0("phrase ", phrase,": ", chord_name) %>% fct_inorder()) +
   geom_text(data = lyric_chord_df_flat,
             x = 1, y = -5.5, size = 3,
             aes(label = lyric %>% str_wrap(28)),
@@ -35,13 +35,17 @@ lyric_chord_df_fingering %>%
   coord_equal() + 
   scale_fill_viridis_c(end = .9) + 
   scale_x_continuous(expand = expansion(.6)) + 
-  theme_void()
+  theme_void() ->
+plot
 
 
 if(bw){
-ggwipe::last_plot_wipe(index = 4) + 
-    geom_point(size = 6, pch= 21, fill = alpha("white", 0), show.legend = F) 
+  plot$layers[[4]] <- NULL
+ plot + 
+    geom_point(size = 6, pch= 21, fill = alpha("white", 0), show.legend = F)->
+   plot
 }
   
+plot
 
 }
