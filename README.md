@@ -31,17 +31,21 @@
             frame.](#use-a-lyrics-chord-data-frame)
           - [Looks good\!\!\! excited to put in a
             function\!](#looks-good-excited-to-put-in-a-function)
+      - [Holiday song\! “Let it snow”](#holiday-song-let-it-snow)
+      - [gershwin](#gershwin)
   - [Part II. Packaging and documentation 🚧
     ✅](#part-ii-packaging-and-documentation--)
       - [Phase 1. Minimal working
         package](#phase-1-minimal-working-package)
-          - [Created files for *package archetecture* with
+          - [Created files for **package archetecture** with
             `devtools::create(".")`
             ✅](#created-files-for-package-archetecture-with-devtoolscreate-)
-          - [Moved *functions R folder*? ✅](#moved-functions-r-folder-)
-          - [Added *roxygen skeleton*? 🚧](#added-roxygen-skeleton-)
-          - [Managed *dependencies* ? ✅](#managed-dependencies--)
-          - [Chosen a *license*? 🚧](#chosen-a-license-)
+          - [Moved **functions R folder**?
+            ✅](#moved-functions-r-folder-)
+          - [Added **roxygen skeleton**? 🚧](#added-roxygen-skeleton-)
+          - [Managed **dependencies** ? ✅](#managed-dependencies--)
+          - [Chosen a package **license**?
+            🚧](#chosen-a-package-license-)
           - [Run `devtools::check()` and addressed errors?
             🚧](#run-devtoolscheck-and-addressed-errors-)
           - [Build package 🚧](#build-package-)
@@ -392,6 +396,55 @@ Fsm <-
 -1--
 2-3-
 ----"
+
+
+D7M <- 
+"pppp
+----
+1111
+---2"
+
+
+A7M <- 
+"pppp
+-1--
+----
+----"
+
+
+Am <- 
+"pppp
+1---
+----
+----"
+
+
+Am7 <- 
+"pppp
+----
+----
+----"
+
+Bm <- 
+"pppp
+----
+-111
+----
+3---"
+
+
+Em <- 
+"pppp
+----
+---1
+----
+-3--"
+
+G <- GM
+D <- DM
+E7 <- E7M
+A7 <- A7M
+D7 <- D7M
 ```
 
 ### Lets include the chords as data in the package. We can add some more later. Also, you can overwrite what’s here, if there is a better fingering.
@@ -630,13 +683,173 @@ lyric_chord_df_to_chart(lyric_chord_df = a_cool_song, bw = T)
 
 ![](README_files/figure-gfm/unnamed-chunk-18-5.png)<!-- -->
 
+## Holiday song\! “Let it snow”
+
+``` r
+song <- readLines("Untitled.txt")
+#> Warning in readLines("Untitled.txt"): incomplete final line found on
+#> 'Untitled.txt'
+song_line <- sort(rep(1:(length(song)/2),2))
+characters <- song %>% stringr::str_split("") 
+element <- rep(c("chord", "lyric"), length(song)/2)
+
+
+rep_spaces <- function(x){
+  
+  rep("", x)
+}
+
+combine <- function(x, y){
+  
+  
+  c(x, y)
+  
+}
+
+tibble(song_line, characters, element)  %>% 
+  mutate(num_char = map_dbl(characters, length)) %>% 
+  group_by(song_line) %>% 
+  mutate(max_char = max(num_char)) %>% 
+  ungroup() %>% 
+  mutate(diff_char = max_char - num_char) %>% 
+  mutate(spaces_to_add = map(diff_char, rep_spaces)) %>% 
+  mutate(chars_evened_up = map2(characters, spaces_to_add, combine) ) %>% 
+  pivot_wider(id_cols = song_line, 
+              names_from = element, 
+              values_from = chars_evened_up) %>% 
+  unnest() %>% 
+  mutate(ind_chord_space = chord == " ") %>% 
+  mutate(ind_init_chord = !ind_chord_space & lag(ind_chord_space)) %>% 
+  mutate(ind_init_chord = replace_na(ind_init_chord, FALSE) ) %>% 
+  mutate(id_chord_phrase = cumsum(ind_init_chord)) %>% 
+  group_by(id_chord_phrase) %>% 
+  summarize(lyric = paste(lyric, collapse = ""),
+            chord_name = paste(chord, collapse = "") %>% str_trim()) ->
+snow_from_txt
+#> Warning: `cols` is now required when using `unnest()`.
+#> ℹ Please use `cols = c(chord, lyric)`.
+```
+
+``` r
+lyric_chord_df_to_chart(snow_from_txt[2:7,], bw = T)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+
+``` r
+lyric_chord_df_to_chart(snow_from_txt[8:13,], bw = T)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-20-2.png)<!-- -->
+
+``` r
+
+txt_chord_lyrics_to_df <- function(path){
+
+song <- readLines(path)
+song_line <- sort(rep(1:(length(song)/2),2))
+characters <- song %>% stringr::str_split("") 
+element <- rep(c("chord", "lyric"), length(song)/2)
+
+
+rep_spaces <- function(x){
+  
+  rep("", x)
+}
+
+combine <- function(x, y){
+  
+  
+  c(x, y)
+  
+}
+tibble(song_line, characters, element)  %>% 
+  mutate(num_char = map_dbl(characters, length)) %>% 
+  group_by(song_line) %>% 
+  mutate(max_char = max(num_char)) %>% 
+  ungroup() %>% 
+  mutate(diff_char = max_char - num_char) %>% 
+  mutate(spaces_to_add = map(diff_char, rep_spaces)) %>% 
+  mutate(chars_evened_up = map2(characters, spaces_to_add, combine) ) %>% 
+  pivot_wider(id_cols = song_line, 
+              names_from = element, 
+              values_from = chars_evened_up) %>% 
+  unnest() %>% 
+  mutate(ind_chord_space = chord == " ") %>% 
+  mutate(ind_init_chord = !ind_chord_space & lag(ind_chord_space)) %>% 
+  mutate(ind_init_chord = replace_na(ind_init_chord, FALSE) ) %>% 
+  mutate(id_chord_phrase = cumsum(ind_init_chord)) %>% 
+  group_by(id_chord_phrase) %>% 
+  summarize(lyric = paste(lyric, collapse = ""),
+            chord_name = paste(chord, collapse = "") %>% str_trim())
+
+}
+```
+
+## gershwin
+
+  - “F” chord reared it’s ugly head, I find/replaced with FM but maybe
+    this can be better managed
+  - There may have been a problem with phrases that don’t start with a
+    new chord. I worked on it in the text file.
+
+<!-- end list -->
+
+``` r
+gershwin_ly_ch_df <- txt_chord_lyrics_to_df("gershwin.txt")
+#> Warning in readLines(path): incomplete final line found on 'gershwin.txt'
+#> Warning: `cols` is now required when using `unnest()`.
+#> ℹ Please use `cols = c(chord, lyric)`.
+dim(gershwin_ly_ch_df)
+#> [1] 38  3
+lyric_chord_df_to_chart(gershwin_ly_ch_df[1:6,]  , bw = T)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+``` r
+lyric_chord_df_to_chart(gershwin_ly_ch_df[7:12,] , bw = T)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-22-2.png)<!-- -->
+
+``` r
+lyric_chord_df_to_chart(gershwin_ly_ch_df[13:18,], bw = T)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-22-3.png)<!-- -->
+
+``` r
+lyric_chord_df_to_chart(gershwin_ly_ch_df[19:24,], bw = T)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-22-4.png)<!-- -->
+
+``` r
+lyric_chord_df_to_chart(gershwin_ly_ch_df[25:30,], bw = T)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-22-5.png)<!-- -->
+
+``` r
+lyric_chord_df_to_chart(gershwin_ly_ch_df[31:36,], bw = T)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-22-6.png)<!-- -->
+
+``` r
+lyric_chord_df_to_chart(gershwin_ly_ch_df[37:38,], bw = T)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-22-7.png)<!-- -->
+
 # Part II. Packaging and documentation 🚧 ✅
 
 ## Phase 1. Minimal working package
 
-### Created files for *package archetecture* with `devtools::create(".")` ✅
+### Created files for **package archetecture** with `devtools::create(".")` ✅
 
-### Moved *functions R folder*? ✅
+### Moved **functions R folder**? ✅
 
 ``` r
 knitr::knit_code$get() |> names()
@@ -655,10 +868,12 @@ knitr::knit_code$get() |> names()
 #> [25] "unnamed-chunk-19"          "unnamed-chunk-20"         
 #> [27] "unnamed-chunk-21"          "unnamed-chunk-22"         
 #> [29] "unnamed-chunk-23"          "unnamed-chunk-24"         
-#> [31] "unnamed-chunk-25"          "test_calc_frequency_works"
-#> [33] "unnamed-chunk-26"          "unnamed-chunk-27"         
-#> [35] "unnamed-chunk-28"          "unnamed-chunk-29"         
-#> [37] "unnamed-chunk-30"          "unnamed-chunk-31"
+#> [31] "unnamed-chunk-25"          "unnamed-chunk-26"         
+#> [33] "unnamed-chunk-27"          "unnamed-chunk-28"         
+#> [35] "unnamed-chunk-29"          "test_calc_frequency_works"
+#> [37] "unnamed-chunk-30"          "unnamed-chunk-31"         
+#> [39] "unnamed-chunk-32"          "unnamed-chunk-33"         
+#> [41] "unnamed-chunk-34"          "unnamed-chunk-35"
 ```
 
 Use new {readme2pkg} function to do this from readme if you haven’t
@@ -668,7 +883,7 @@ already
 # readme2pkg::chunk_to_r("")
 ```
 
-### Added *roxygen skeleton*? 🚧
+### Added **roxygen skeleton**? 🚧
 
 Use a roxygen skeleton for auto documentation and making sure proposed
 functions are *exported*.
@@ -676,7 +891,7 @@ functions are *exported*.
 We haven’t done this which means none of the functions are exported. To
 access them we need to use ‘gguke:::’ syntax.
 
-### Managed *dependencies* ? ✅
+### Managed **dependencies** ? ✅
 
 Package dependencies managed, i.e. `depend::function()` in proposed
 functions and declared in the DESCRIPTION
@@ -688,7 +903,7 @@ usethis::use_package("dplyr")
 #> • Refer to functions with `dplyr::fun()`
 ```
 
-### Chosen a *license*? 🚧
+### Chosen a package **license**? 🚧
 
 ``` r
 usethis::use_mit_license()
@@ -825,7 +1040,7 @@ gguke:::uke_fretboard() +
   gguke:::add_lyric()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
 
 ``` r
 
@@ -835,7 +1050,7 @@ gguke:::uke_fretboard() +
   gguke:::add_lyric("a different lyric")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-31-2.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-35-2.png)<!-- -->
 
 ``` r
 
@@ -849,4 +1064,4 @@ a_cool_song22 <- tibble::tribble(~lyric, ~chord_name,
 gguke:::lyric_chord_df_to_chart(a_cool_song22)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-31-3.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-35-3.png)<!-- -->
