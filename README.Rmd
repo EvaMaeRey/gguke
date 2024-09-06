@@ -26,7 +26,7 @@ library(tidyverse)
 
 And because we make it with ggplot2, we can do a lot with customization.  For example, fingers get assigned a color using the viridis palette. 
 
-This is currently a [{readme2pkg}]() project; we're writing in a kind-of stream of consciousness way, bundling up useful code into functions as we go in our README.rmd narrative, and then sending written-up functions to our R folder with knitr/rmd magic. Our commitment to keeping things as they are is low at this point, but it is a real package.  Lifecycle is *early* experimental. See also [{litr}](). 
+This is currently a [{knitrExtra}]() project; we're writing in a kind-of stream of consciousness way, bundling up useful code into functions as we go in our README.rmd narrative, and then sending written-up functions to our R folder with knitr/rmd magic. Our commitment to keeping things as they are is low at this point, but it is a real package.  Lifecycle is *early* experimental. See also [{litr}](). 
 
 Beyond the descriptions of our work, we interject comments on our hesitations 🤔 and areas that need some work 🚧, for your consideration marked with emoji.
 
@@ -71,7 +71,7 @@ data.frame(finger = chart) %>%
 ### Make it a function...
 
 
-```{r}
+```{r parse_chord}
 parse_chord <- function(chord = CM){
 
 play_TF <- chord |> stringr::str_split("") %>%  .[[1]] %>% .[1:4]
@@ -112,7 +112,7 @@ parse_chord()[[2]]
 
 ```{r, eval = T}
 usethis::use_pipe()
-readme2pkg::chunk_to_r("parse_chord")
+knitrExtra:::chunk_to_r("parse_chord")
 ```
 
 ## then we need a **fret board**. 
@@ -136,9 +136,9 @@ ggplot() +
 ### looks good; make it a function
 
 ```{r uke_fretboard}
-uke_fretboard <- function(){
+uke_fretboard <- function(data = NULL){
   
-  ggplot() + 
+  ggplot(data) + 
   annotate(geom = "segment", x = 1:4, y = .5, 
            xend = 1:4, yend = 5, linewidth = 3) + 
   annotate(geom = "segment", y = 0:4 +.5, 
@@ -150,13 +150,15 @@ uke_fretboard <- function(){
   scale_fill_viridis_c(limits = c(1,4), guide = F) 
   
 }
+
+gguke <- uke_fretboard
 ```
 
 🤔 maybe gguke() would be better
 🤔 maybe a coord_uke could be a long-term goal.
 
 ```{r, eval = T}
-readme2pkg::chunk_to_r("uke_fretboard")
+knitrExtra:::chunk_to_r("uke_fretboard")
 ```
 
 
@@ -205,7 +207,7 @@ add_chord_fingering <- function(chord = CM){
 ```  
 
 ```{r, eval = T}
-readme2pkg::chunk_to_r("add_chord_fingering")
+knitrExtra:::chunk_to_r("add_chord_fingering")
 ```
 
 ## Okay, **add lyrics**
@@ -233,7 +235,7 @@ add_lyric <- function(lyric = "Come stop your cryin', it'll be all right"){
 
 
 ```{r, eval = T}
-readme2pkg::chunk_to_r("add_lyric")
+knitrExtra:::chunk_to_r("add_lyric")
 ```
 
 ### Test it out
@@ -519,7 +521,7 @@ plot
 ```
 
 ```{r}
-readme2pkg::chunk_to_r("lyric_chord_df_to_chart")
+knitrExtra:::chunk_to_r("lyric_chord_df_to_chart")
 ```
 
 
@@ -649,11 +651,157 @@ lyric_chord_df_to_chart(gershwin_ly_ch_df[37:38,], bw = T)
 
 ```
 
+## Part I.b
+
+Make it more ggplot2 grammatical
+
+### step 1. computation (will be left join of a chord library)
+
+```{r}
+#' Title
+#'
+#' @param chords 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' build_chord_library(c("Am7","CM", "DM", "E7M"))
+build_chord_library <- function(chords){
+  
+  out <- data.frame()
+  
+  for(i in 1:length(chords)){
+    
+    chord_df <- parse_chord(get(chords[i]))[[2]]
+    if(nrow(chord_df)>=1){chord_df$chord <- chords[i]}
+    
+    out <- bind_rows(out, chord_df)                       
+                           
+  }
+  
+  out 
+  
+  
+}
+
+chord_library <- gershwin_ly_ch_df$chord_name[1:4] %>%   build_chord_library()
+
+compute_group_uke_chord <- function(data, scales){
+
+  # chord_library <- build_chord_library(data$chord)
+  
+  data %>% 
+    mutate(row = row_number()) %>% 
+    left_join(chord_library, by = "chord") %>% 
+    mutate(x = string) %>% 
+    mutate(y = -fret)
+  
+}
+```
+
+Test...
+
+```{r}
+gershwin_ly_ch_df[1:4,] %>% 
+  rename(chord = chord_name) %>% 
+  compute_group_uke_chord()
+```
+
+
+### step 2. pass to ggproto
+
+```{r}
+StatUkefingers <- ggplot2::ggproto(
+  `_class` = "StatUkefingers",
+  `_inherit` = ggplot2::Stat,
+  required_aes = c("chord"),
+  compute_panel = compute_group_uke_chord,
+  default_aes = ggplot2::aes(label = after_stat(finger), 
+                             color = after_stat(finger),
+                             fill = after_stat(finger)))
+```
+
+### step 3. write geom_chord
+
+```{r}
+stat_chord <- function(
+  mapping = NULL,
+  data = NULL,
+  position = "identity",
+  na.rm = FALSE,
+      geom = ggplot2::GeomPoint,  # inherit other behavior
+
+  show.legend = NA,
+  inherit.aes = TRUE, ...) {
+  ggplot2::layer(
+    stat = StatUkefingers,  # proto object from step 2
+    data = data,
+    geom = geom,
+    mapping = mapping,
+    position = position,
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    params = list(na.rm = na.rm, ...)
+  )
+}
+
+geom_chord <- function(size = 15, pch = 21, color = "black", ...){
+  
+  stat_chord(size = size, pch = pch, color = color, ...)
+  
+}
+
+geom_chord_finger <- function(color = "black", size = 10, ...){
+  
+  stat_chord(geom = "text", color = color, size = size, ...)
+  
+}
+```
+
+
+```{r, fig.width=10, fig.height=10, warning=F, }
+
+tribble(~lyric, ~chord_name,
+"Its very clear",	"D7",	
+"Our love is",	"FM",
+"here to",	"Dm",
+"stay",	"Am7") %>% 
+  gguke() + 
+  scale_color_viridis_c() +
+  aes(chord = chord_name) + 
+  geom_chord(fill = "white") +
+  geom_chord(alpha = .6, color = "black") + 
+  geom_chord_finger(color = "black", size = 10) + 
+  facet_wrap(~fct_inorder(lyric)) + 
+  theme_void(base_size = 20)
+
+
+chord_library <- build_chord_library(c("CM", "GM"))
+
+tribble(~lyric, ~chord_name,
+"Mary had a little lamb,",	"CM",	
+"little lamb,",	"GM",
+"little lamb.",	"CM",
+"Mary had a little lamb...",	"CM") %>% 
+  gguke() + 
+  scale_color_viridis_c() +
+  aes(chord = chord_name) + 
+  geom_chord(fill = "white") +
+  geom_chord(alpha = .6, color = "black") + 
+  geom_chord_finger(color = "black", size = 10) + 
+  facet_wrap(~fct_inorder(lyric)) + 
+  theme_void(base_size = 20)
+
+```
+
+
+
 # Part II. Packaging and documentation  🚧 ✅ 
 
 ## Phase 1. Minimal working package
 
-### Created files for **package archetecture** with `devtools::create(".")` ✅ 
+### Created files for **package architecture** with `devtools::create(".")` ✅ 
 
 ### Moved **functions R folder**? ✅  
 
@@ -742,7 +890,7 @@ test_that("calc frequency works", {
 
 
 ```{r, eval = F}
-readme2pkg::chunk_to_tests_testthat("test_calc_frequency_works")
+knitrExtra:::chunk_to_tests_testthat("test_calc_frequency_works")
 ```
 
 

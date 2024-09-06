@@ -1,6 +1,6 @@
-uke_fretboard <- function(){
+uke_fretboard <- function(data = NULL){
   
-  ggplot() + 
+  ggplot(data) + 
   annotate(geom = "segment", x = 1:4, y = .5, 
            xend = 1:4, yend = 5, linewidth = 3) + 
   annotate(geom = "segment", y = 0:4 +.5, 
@@ -12,3 +12,5 @@ uke_fretboard <- function(){
   scale_fill_viridis_c(limits = c(1,4), guide = F) 
   
 }
+
+gguke <- uke_fretboard
