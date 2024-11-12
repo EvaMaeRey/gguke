@@ -1,42 +1,68 @@
----
-output: 
-  github_document:
-    toc: TRUE
----
+
+- [gguke is under construction! 🚧 Feedback
+  welcome!](#gguke-is-under-construction--feedback-welcome)
+  - [**Chord info input**](#chord-info-input)
+  - [Build up slightly larger **chord
+    library**](#build-up-slightly-larger-chord-library)
+    - [Translate finger_str to fret, finger, string
+      info](#translate-finger_str-to-fret-finger-string-info)
+    - [Make it a function…](#make-it-a-function)
+- [use parsing to expand dataframe to have row per finger
+  placement.](#use-parsing-to-expand-dataframe-to-have-row-per-finger-placement)
+  - [now we’ll place **fingers positions** w/ point and
+    text](#now-well-place-fingers-positions-w-point-and-text)
+  - [Part I.b](#part-ib)
+    - [step 1. computation (will be left join of a chord
+      library)](#step-1-computation-will-be-left-join-of-a-chord-library)
+    - [step 2. pass to ggproto](#step-2-pass-to-ggproto)
+    - [step 3. write geom_chord](#step-3-write-geom_chord)
+  - [then we need a **fret board**.](#then-we-need-a-fret-board)
+    - [make it once](#make-it-once)
+    - [looks good; make it a function](#looks-good-make-it-a-function)
+  - [from **lyric-chord data frame to
+    chart**…](#from-lyric-chord-data-frame-to-chart)
+    - [use a lyrics-chord data frame.](#use-a-lyrics-chord-data-frame)
+  - [from text to chord-lyric data frame (w/ let it
+    snow)](#from-text-to-chord-lyric-data-frame-w-let-it-snow)
+  - [gershwin](#gershwin)
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
-
-library(tidyverse)
-
-```
 
 # gguke is under construction! 🚧 Feedback welcome!
 
 <!-- badges: start -->
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
-{gguke} will provide tools for visualizing ukelele chords with lyrics. This is for people that aren't so good at ukelele; they may not really know the chords yet.  It's a chord-first approach to song charts, which might have only chord names or small finger position.  
+{gguke} will provide tools for visualizing ukelele chords with lyrics.
+This is for people that aren’t so good at ukelele; they may not really
+know the chords yet. It’s a chord-first approach to song charts, which
+might have only chord names or small finger position.
 
-And because we make it with ggplot2, we can do a lot with customization.  For example, fingers get assigned a color using the viridis palette. 
+And because we make it with ggplot2, we can do a lot with customization.
+For example, fingers get assigned a color using the viridis palette.
 
-This is currently a [{knitrExtra}]() project; we're writing in a kind-of stream of consciousness way, bundling up useful code into functions as we go in our README.rmd narrative, and then sending written-up functions to our R folder with knitr/rmd magic. Our commitment to keeping things as they are is low at this point, but it is a real package.  Lifecycle is *early* experimental. See also [{litr}](). 
+This is currently a [{knitrExtra}]() project; we’re writing in a kind-of
+stream of consciousness way, bundling up useful code into functions as
+we go in our README.rmd narrative, and then sending written-up functions
+to our R folder with knitr/rmd magic. Our commitment to keeping things
+as they are is low at this point, but it is a real package. Lifecycle is
+*early* experimental. See also [{litr}]().
 
-Beyond the descriptions of our work, we interject comments on our hesitations 🤔 and areas that need some work 🚧, for your consideration marked with emoji.
+Beyond the descriptions of our work, we interject comments on our
+hesitations 🤔 and areas that need some work 🚧, for your consideration
+marked with emoji.
 
 ## **Chord info input**
 
-First, something I'm very excited about, a new-chord ingestion... - it's just text.  Here's a C major fingering, where first line is whether string is played or not.  There are four strings across, the number indicates where on the fret board the specific finger should be placed:
+First, something I’m very excited about, a new-chord ingestion… - it’s
+just text. Here’s a C major fingering, where first line is whether
+string is played or not. There are four strings across, the number
+indicates where on the fret board the specific finger should be placed:
 
-
-
-```{r}
+``` r
 CM <- 
 "pppp
 ----
@@ -55,12 +81,14 @@ chord_library <- data.frame(chord_name =
                               c(CM, GM)) 
 
 chord_library
+#>   chord_name          fingering_str
+#> 1         CM pppp\n----\n----\n---3
+#> 2         GM pppp\n----\n-1-2\n--3-
 ```
-
 
 ## Build up slightly larger **chord library**
 
-```{r}
+``` r
 # easy to write
 Dm <- 
 "pppp
@@ -83,30 +111,44 @@ Bm <- "pppp\n----\n-111\n----\n3---"
 Em <- "pppp\n----\n---1\n----\n-3--"
 ```
 
-
-```{r}
+``` r
 chord_library <- tibble(chord_name = 
 c("CM", "GM", "Dm", "E7M", "AM","DM", "Dbm", "F#m", "D7M", "A7M", "Am", "Am7", "Bm", "Em"),
 fingering_str = 
 c(CM, GM, Dm, E7M, AM, DM, Dbm, `F#m`, D7M, A7M, Am, Am7, Bm, Em))
 chord_library
-
-
-
+#> # A tibble: 14 × 2
+#>    chord_name fingering_str                 
+#>    <chr>      <chr>                         
+#>  1 CM         "pppp\n----\n----\n---3"      
+#>  2 GM         "pppp\n----\n-1-2\n--3-"      
+#>  3 Dm         "pppp\n--1-\n23--\n----"      
+#>  4 E7M        "pppp\n1---\n-2-3\n----"      
+#>  5 AM         "pppp\n-1--\n2---\n----"      
+#>  6 DM         "pppp\n----\n123-\n----"      
+#>  7 Dbm        "pppp\n12--\n----\n----"      
+#>  8 F#m        "pppp\n-1--\n2-3-\n----"      
+#>  9 D7M        "pppp\n----\n1111\n---2"      
+#> 10 A7M        "pppp\n-1--\n----\n----"      
+#> 11 Am         "pppp\n1---\n----\n----"      
+#> 12 Am7        "pppp\n----\n----\n----"      
+#> 13 Bm         "pppp\n----\n-111\n----\n3---"
+#> 14 Em         "pppp\n----\n---1\n----\n-3--"
 ```
-
-
-
-
 
 ### Translate finger_str to fret, finger, string info
 
-Then translate that to data frame that records string, fret, and finger that will play each note. I'm just doing the first thing that came to mind - some string manipulation, but might move to read.delim...
+Then translate that to data frame that records string, fret, and finger
+that will play each note. I’m just doing the first thing that came to
+mind - some string manipulation, but might move to read.delim…
 
-
-```{r}
+``` r
 
 CM |> stringr::str_split("") %>%  .[[1]] %>% .[1:4]
+#> [1] "p" "p" "p" "p"
+```
+
+``` r
 
 chart <- CM |> stringr::str_split("") %>%  .[[1]] %>% .[5:length(.)] 
 num_frets <- length(chart)/5
@@ -119,16 +161,16 @@ data.frame(finger = chart) %>%
   dplyr::mutate(string = string) %>% 
   dplyr::mutate(finger = ifelse(.data$finger == "-", NA, finger) %>% as.numeric()) %>% 
   dplyr::filter(!is.na(finger)) 
-
-
+#>   finger fret string
+#> 1      3    3      4
 ```
 
-🤔 maybe read.delim(delim = ""), would work better and feel more grokable that this string split business! :-)
+🤔 maybe read.delim(delim = ““), would work better and feel more
+grokable that this string split business! :-)
 
-### Make it a function...
+### Make it a function…
 
-
-```{r parse_chord}
+``` r
 parse_chord <- function(chord = CM){
 
 play_TF <- chord |> stringr::str_split("") %>%  .[[1]] %>% .[1:4]
@@ -152,20 +194,24 @@ list(play_tf = play_TF,
 }
 ```
 
-```{r}
+``` r
 
 # play or not for each string
 parse_chord()[[1]]
+#> [1] "p" "p" "p" "p"
+```
+
+``` r
 
 # dataframe with finger placement info
 parse_chord()[[2]]
-
-
+#>   finger fret string
+#> 1      3    3      4
 ```
 
 # use parsing to expand dataframe to have row per finger placement.
 
-```{r}
+``` r
 parse_chord_fingering <- function(chord){
   
   parse_chord(chord)[[2]]
@@ -189,33 +235,42 @@ chord_library %>%
   unnest(parsed_chords)
 
 }
-
 ```
-```{r}
+
+``` r
 chord_library_parsed <- chord_library %>% chord_library_parse_chords() 
 
 chord_library_parsed
+#> # A tibble: 33 × 6
+#>    chord_name fingering_str            phrase_chord_id finger  fret string
+#>    <chr>      <chr>                              <int>  <dbl> <int>  <int>
+#>  1 CM         "pppp\n----\n----\n---3"               1      3     3      4
+#>  2 GM         "pppp\n----\n-1-2\n--3-"               2      1     2      2
+#>  3 GM         "pppp\n----\n-1-2\n--3-"               2      2     2      4
+#>  4 GM         "pppp\n----\n-1-2\n--3-"               2      3     3      3
+#>  5 Dm         "pppp\n--1-\n23--\n----"               3      1     1      3
+#>  6 Dm         "pppp\n--1-\n23--\n----"               3      2     2      1
+#>  7 Dm         "pppp\n--1-\n23--\n----"               3      3     2      2
+#>  8 E7M        "pppp\n1---\n-2-3\n----"               4      1     1      1
+#>  9 E7M        "pppp\n1---\n-2-3\n----"               4      2     2      2
+#> 10 E7M        "pppp\n1---\n-2-3\n----"               4      3     2      4
+#> # ℹ 23 more rows
 ```
 
-
-
-```{r, eval = T}
+``` r
 usethis::use_pipe()
-knitrExtra:::chunk_to_r("parse_chord")
+#> ✔ Setting active project to '/Users/evangelinereynolds/Google
+#> Drive/r_packages/gguke'
 ```
 
+``` r
+knitrExtra:::chunk_to_r("parse_chord")
+#> It seems you are currently knitting a Rmd/Qmd file. The parsing of the file will be done in a new R session.
+```
 
+## now we’ll place **fingers positions** w/ point and text
 
-
-
-
-
-
-
-
-## now we'll place **fingers positions** w/ point and text
-
-```{r}
+``` r
 data.frame(lyric = c("hello", "goodbye"), 
            chord_name = c("CM", "GM")) %>% 
   inner_join(chord_library %>% chord_library_parse_chords()) %>%
@@ -234,11 +289,10 @@ data.frame(lyric = c("hello", "goodbye"),
             )  + 
   scale_y_reverse() + 
   coord_equal(xlim = c(1,4), ylim = c(4, 1))
+#> Joining with `by = join_by(chord_name)`
 ```
 
-
-
-
+![](READMEnew_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 ## Part I.b
 
@@ -246,7 +300,7 @@ Make it more ggplot2 grammatical
 
 ### step 1. computation (will be left join of a chord library)
 
-```{r}
+``` r
 chord_library %>% 
   chord_library_parse_chords() ->
 chord_library_parsed
@@ -262,12 +316,9 @@ compute_group_uke_fingering <- function(data, scales, chord_library = chord_libr
 }
 ```
 
-
-
-
 ### step 2. pass to ggproto
 
-```{r}
+``` r
 StatUkefingers <- ggplot2::ggproto(
   `_class` = "StatUkefingers",
   `_inherit` = ggplot2::Stat,
@@ -281,7 +332,7 @@ StatUkefingers <- ggplot2::ggproto(
 
 ### step 3. write geom_chord
 
-```{r}
+``` r
 library(statexpress)
 
 
@@ -306,16 +357,12 @@ geom_chord_text <- function(...){
 }
 ```
 
-
-
-
-
-```{r, fig.width=10, fig.height=10, warning=F}
+``` r
 tribble(~lyric, ~chord_name,
-"Mary had a little lamb,",	"CM",	
-"little lamb,",	"GM",
-"little lamb.",	"CM",
-"Mary had a little lamb...",	"CM") %>% 
+"Mary had a little lamb,",  "CM",   
+"little lamb,", "GM",
+"little lamb.", "CM",
+"Mary had a little lamb...",    "CM") %>% 
   ggplot() + 
   scale_color_viridis_c() +
   aes(chord = chord_name) + 
@@ -325,14 +372,27 @@ tribble(~lyric, ~chord_name,
   facet_wrap(~fct_inorder(lyric)) + 
   scale_y_reverse() + 
   coord_equal(xlim = c(1,4), ylim = c(4, 1))
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
 ```
 
+![](READMEnew_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
-## then we need a **fret board**. 
+## then we need a **fret board**.
 
 ### make it once
 
-```{r}
+``` r
 library(ggplot2)
 ggplot() + 
   annotate(geom = "segment", x = 1:4, y = 0, 
@@ -345,14 +405,19 @@ ggplot() +
   # theme_void() + 
   coord_equal() +
   scale_fill_viridis_c(limits = c(1,4), guide = F)
+#> Warning: The `guide` argument in `scale_*()` cannot be `FALSE`. This was deprecated in
+#> ggplot2 3.3.4.
+#> ℹ Please use "none" instead.
+#> This warning is displayed once every 8 hours.
+#> Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+#> generated.
 ```
 
-
-
+![](READMEnew_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 ### looks good; make it a function
 
-```{r uke_fretboard}
+``` r
 stamp_fretboard <- function(){
   
   list(
@@ -378,12 +443,12 @@ gguke <- function(data){
 }
 ```
 
-```{r}
+``` r
 tribble(~lyric, ~chord_name,
-"Mary had a little lamb,",	"CM",	
-"little lamb,",	"GM",
-"little lamb.",	"CM",
-"Mary had a little lamb...",	"CM") %>% 
+"Mary had a little lamb,",  "CM",   
+"little lamb,", "GM",
+"little lamb.", "CM",
+"Mary had a little lamb...",    "CM") %>% 
   gguke() + 
   scale_color_viridis_c() +
   aes(chord = chord_name) + 
@@ -391,24 +456,35 @@ tribble(~lyric, ~chord_name,
   geom_chord(alpha = .6, color = "black") + 
   geom_chord_text(color = "black", size = 10) + 
   facet_wrap(~fct_inorder(lyric))
-
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
 ```
 
-🤔 maybe gguke() would be better
-🤔 maybe a coord_uke could be a long-term goal.
+![](READMEnew_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
-```{r, eval = T}
+🤔 maybe gguke() would be better 🤔 maybe a coord_uke could be a
+long-term goal.
+
+``` r
 knitrExtra:::chunk_to_r("uke_fretboard")
+#> It seems you are currently knitting a Rmd/Qmd file. The parsing of the file will be done in a new R session.
 ```
 
-
-
-## from **lyric-chord data frame to chart**...
-
+## from **lyric-chord data frame to chart**…
 
 ### use a lyrics-chord data frame.
 
-```{r}
+``` r
 library(tidyverse)
 library(gguke)
 lyric_chord_df <- tibble::tribble(~lyric, ~chord_name,
@@ -435,11 +511,15 @@ lyric_chord_df <- tibble::tribble(~lyric, ~chord_name,
 "Always", "GM")
 ```
 
-
 ## from text to chord-lyric data frame (w/ let it snow)
 
-```{r}
+``` r
 song <- readLines("Untitled.txt")
+#> Warning in readLines("Untitled.txt"): incomplete final line found on
+#> 'Untitled.txt'
+```
+
+``` r
 song_line <- sort(rep(1:(length(song)/2),2))
 characters <- song %>% stringr::str_split("") 
 element <- rep(c("chord", "lyric"), length(song)/2)
@@ -477,10 +557,11 @@ tibble(song_line, characters, element)  %>%
   summarize(lyric = paste(lyric, collapse = ""),
             chord_name = paste(chord, collapse = "") %>% str_trim()) ->
 snow_from_txt
+#> Warning: `cols` is now required when using `unnest()`.
+#> ℹ Please use `cols = c(chord, lyric)`.
 ```
 
-
-```{r}
+``` r
 
 txt_chord_lyrics_to_df <- function(path){
 
@@ -523,195 +604,39 @@ tibble(song_line, characters, element)  %>%
             chord_name = paste(chord, collapse = "") %>% str_trim())
 
 }
-
 ```
 
 ## gershwin
 
-- There may have been a problem with phrases that don't start with a new chord.  I worked on it in the text file. 
+- There may have been a problem with phrases that don’t start with a new
+  chord. I worked on it in the text file.
 
-```{r, }
+``` r
 gershwin_ly_ch_df <- txt_chord_lyrics_to_df("gershwin.txt")
+#> Warning in readLines(path): incomplete final line found on 'gershwin.txt'
+#> Warning: `cols` is now required when using `unnest()`.
+#> ℹ Please use `cols = c(chord, lyric)`.
 ```
 
-Test...
+Test…
 
-```{r}
+``` r
 gershwin_ly_ch_df[1:4,] %>% 
   rename(chord = chord_name) %>% 
   compute_group_uke_fingering(chord_library = chord_library_parsed)
+#> Joining with `by = join_by(chord)`
+#> # A tibble: 6 × 10
+#>   id_chord_phrase lyric   chord   row fingering_str phrase_chord_id finger  fret
+#>             <int> <chr>   <chr> <int> <chr>                   <int>  <dbl> <int>
+#> 1               0 "Its v… D7        1  <NA>                      NA     NA    NA
+#> 2               1 "Our l… FM        2  <NA>                      NA     NA    NA
+#> 3               2 " here… Dm        3 "pppp\n--1-\…               3      1     1
+#> 4               2 " here… Dm        3 "pppp\n--1-\…               3      2     2
+#> 5               2 " here… Dm        3 "pppp\n--1-\…               3      3     2
+#> 6               3 " stay" Am7       4  <NA>                      NA     NA    NA
+#> # ℹ 2 more variables: string <int>, x <int>
 ```
 
-
-```{r}
+``` r
 knitr::knit_exit()
-
 ```
-
-# Part II. Packaging and documentation  🚧 ✅ 
-
-## Phase 1. Minimal working package
-
-### Created files for **package architecture** with `devtools::create(".")` ✅ 
-
-### Moved **functions R folder**? ✅  
-
-```{r}
-knitr::knit_code$get() |> names()
-```
-
-Use new {readme2pkg} function to do this from readme if you haven't already
-
-```{r, eval = F}
-# readme2pkg::chunk_to_r("")
-```
-
-### Added **roxygen skeleton**? 🚧
-
-Use a roxygen skeleton for auto documentation and making sure proposed functions are *exported*.
-
-We haven't done this which means none of the functions are exported.  To access them we need to use 'gguke:::' syntax.
-
-### Managed **dependencies** ? ✅ 
-
-Package dependencies managed, i.e. `depend::function()` in proposed functions and declared in the DESCRIPTION
-
-```{r}
-usethis::use_package("ggplot2")
-usethis::use_package("dplyr")
-```
-
-
-
-### Chosen a package **license**? 🚧 
-
-
-```{r, eval=F}
-usethis::use_mit_license()
-```
-
-### Run `devtools::check()` and addressed errors? 🚧 
-
-```{r, results='hide', error=T, eval = F}
-devtools::check(pkg = ".")
-```
-
-### Build package 🚧 
-
-```{r, eval = F}
-devtools::build()
-```
-
-You need to do this before Part 0 in this document will work.
-
-### Make aspirational part of readme real. 🚧 
-
-At this point, you could change eval chunk options to TRUE. You can remove  the 🦄 emoji and perhaps replace it with construction site if you are still uncertain of the API, and want to highlight that it is subject to change. 
-
-### Add lifecycle badge (experimental)
-
-```{r}
-usethis::use_lifecycle_badge("experimental")
-```
-
-
-## Phase 2: Listen & iterate 🚧 
-
-Try to get feedback from experts on API, implementation, default decisions.  Is there already work that solves this problem? 
-
-
-## Phase 3: Let things settle
-
-### Settle on examples.  Put them in the roxygen skeleton and readme. 🚧 
-
-### Written formal tests of functions? 🚧 
-
-
-That would look like this...
-
-```{r test_calc_frequency_works, eval=F}
-library(testthat)
-
-test_that("calc frequency works", {
-  expect_equal(calc_frequency("A", 0), 440)
-  expect_equal(calc_frequency("A", -1), 220)
-  
-})
-```
-
-
-```{r, eval = F}
-knitrExtra:::chunk_to_tests_testthat("test_calc_frequency_works")
-```
-
-
-### Have you worked added a description and author information in the DESCRIPTION file? 🚧 
-
-### Addressed *all* notes, warnings and errors. 🚧 
-
-## Promote to wider audience...
-
-### Package website built? 🚧 
-
-### Package website deployed? 🚧 
-
-## Phase 3: Harden/commit
-
-### Submit to CRAN? Or don't.  🚧 
-
-# Appendix: Reports, Environment
-
-## Description file extract
-
-```{r}
-
-```
-
-## Environment
-
-Here I just want to print the packages and the versions
-
-```{r}
-all <- sessionInfo() |> print() |> capture.output()
-all[11:17]
-```
-
-## `devtools::check()` report
-
-```{r, error = T, results="hide", warning=F}
-devtools::check(pkg = ".")
-```
-
-```{r}
-devtools::build(".")
-```
-
-# test functions from package, use :: (or :::)
-
-```{r}
-library(gguke)
-data("Dm")
-
-gguke:::uke_fretboard() + 
-  gguke:::add_chord_fingering() + 
-  gguke:::add_lyric()
-
-
-gguke:::uke_fretboard() + 
-  gguke:::add_chord_fingering(Fsm) + 
-  gguke:::add_lyric("a different lyric")
-
-a_cool_song22 <- tibble::tribble(~lyric, ~chord_name,
-                       "This is my cool lyric", "CM",
-                       "This is another", "DM",
-                       "hi", "GM",
-                       "hola hola!", "E7M")
-
-
-gguke:::lyric_chord_df_to_chart(a_cool_song22)
-
-
-```
-
-
-

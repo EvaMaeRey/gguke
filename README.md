@@ -105,11 +105,10 @@ marked with emoji.
 
 ## **Chord info input**
 
-First, something I’m very excited about, a new-chord ingestion
-proposal… - it’s just text. Here’s a C major fingering, where first line
-is whether string is played or not. There are four strings across, the
-number indicates where on the fret board the specific finger should be
-placed:
+First, something I’m very excited about, a new-chord ingestion… - it’s
+just text. Here’s a C major fingering, where first line is whether
+string is played or not. There are four strings across, the number
+indicates where on the fret board the specific finger should be placed:
 
 ``` r
 CM <- 
@@ -232,22 +231,26 @@ ggplot() +
 ### looks good; make it a function
 
 ``` r
-uke_fretboard <- function(data = NULL){
+stamp_fretboard <- function(){
   
-  ggplot(data) + 
-  annotate(geom = "segment", x = 1:4, y = .5, 
-           xend = 1:4, yend = 5, linewidth = 3) + 
+  list(annotate(geom = "segment", x = 1:4, y = .5, 
+           xend = 1:4, yend = 5, linewidth = 3),
   annotate(geom = "segment", y = 0:4 +.5, 
-           yend = 0:4 +.5, x = 1, xend = 4, linewidth = 3) + 
-  scale_y_reverse() + 
-  scale_x_continuous(expand = expansion(.2)) +
-  theme_void() + 
-  coord_equal() +
+           yend = 0:4 +.5, x = 1, xend = 4, linewidth = 3),
+  scale_y_reverse(),
+  scale_x_continuous(expand = expansion(.2)),
+  theme_void(),
+  coord_equal(),
   scale_fill_viridis_c(limits = c(1,4), guide = F) 
+  )
   
 }
 
-gguke <- uke_fretboard
+gguke <- function(data){ 
+  
+ ggplot(data = data) + stamp_fretboard()
+  
+}
 ```
 
 🤔 maybe gguke() would be better 🤔 maybe a coord_uke could be a
@@ -261,7 +264,7 @@ knitrExtra:::chunk_to_r("uke_fretboard")
 ## now we’ll place **fingers positions** w/ point and text
 
 ``` r
-uke_fretboard() + 
+gguke(cars) + 
   geom_point(data = parse_chord()[[2]],
              size = 15, 
              aes(x = string, y = fret),
@@ -311,7 +314,7 @@ knitrExtra:::chunk_to_r("add_chord_fingering")
 ## Okay, **add lyrics**
 
 ``` r
-uke_fretboard() +
+gguke(cars) +
   add_chord_fingering() +
   labs(caption = "Come stop your cryin', it'll be all right" %>% str_wrap(28)) + 
   theme(text = element_text(size = 23))
@@ -340,7 +343,7 @@ knitrExtra:::chunk_to_r("add_lyric")
 ### Test it out
 
 ``` r
-uke_fretboard() + 
+gguke(cars) + 
   add_chord_fingering(CM) + 
   add_lyric("Just take my hand and hold it tight")
 ```
@@ -357,7 +360,7 @@ FM <-
 2---
 ----"
 
-uke_fretboard() + 
+gguke(cars) + 
   add_chord_fingering(FM) + 
   add_lyric("I will protect you from all around you")
 ```
@@ -953,7 +956,7 @@ build_chord_library <- function(chords){
 
 chord_library <- gershwin_ly_ch_df$chord_name[1:4] %>%   build_chord_library()
 
-compute_group_uke_chord <- function(data, scales){
+compute_group_uke_chord <- function(data, scales, chord_library){
 
   # chord_library <- build_chord_library(data$chord)
   
@@ -971,7 +974,7 @@ Test…
 ``` r
 gershwin_ly_ch_df[1:4,] %>% 
   rename(chord = chord_name) %>% 
-  compute_group_uke_chord()
+  compute_group_uke_chord(chord_library = chord_library)
 #> # A tibble: 11 × 9
 #>    id_chord_phrase lyric             chord   row finger  fret string     x     y
 #>              <int> <chr>             <chr> <int>  <dbl> <int>  <int> <int> <int>
@@ -998,7 +1001,7 @@ StatUkefingers <- ggplot2::ggproto(
   compute_panel = compute_group_uke_chord,
   default_aes = ggplot2::aes(label = after_stat(finger), 
                              color = after_stat(finger),
-                             fill = after_stat(finger)))
+                             fill  = after_stat(finger)))
 ```
 
 ### step 3. write geom_chord
@@ -1150,25 +1153,12 @@ usethis::use_mit_license()
 
 ``` r
 devtools::check(pkg = ".")
-#> ℹ Installed roxygen2 version (7.3.1) doesn't match required (7.2.3)
-#> ✖ `check()` will not re-document this package
-#> Error: R CMD check found WARNINGs
 ```
 
 ### Build package 🚧
 
 ``` r
 devtools::build()
-#> ── R CMD build ─────────────────────────────────────────────────────────────────
-#>   ✔  checking for file ‘/Users/evangelinereynolds/Google Drive/r_packages/gguke/DESCRIPTION’ (599ms)
-#>   ─  preparing ‘gguke’: (1.9s)
-#>      checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
-#>   ─  checking for LF line-endings in source and make files and shell scripts (522ms)
-#>   ─  checking for empty or unneeded directories
-#>   ─  building ‘gguke_0.0.0.9000.tar.gz’
-#>      
-#> 
-#> [1] "/Users/evangelinereynolds/Google Drive/r_packages/gguke_0.0.0.9000.tar.gz"
 ```
 
 You need to do this before Part 0 in this document will work.
@@ -1259,10 +1249,10 @@ devtools::check(pkg = ".")
 ``` r
 devtools::build(".")
 #> ── R CMD build ─────────────────────────────────────────────────────────────────
-#>      checking for file ‘/Users/evangelinereynolds/Google Drive/r_packages/gguke/DESCRIPTION’ ...  ✔  checking for file ‘/Users/evangelinereynolds/Google Drive/r_packages/gguke/DESCRIPTION’ (362ms)
-#>   ─  preparing ‘gguke’: (618ms)
+#>      checking for file ‘/Users/evangelinereynolds/Google Drive/r_packages/gguke/DESCRIPTION’ ...  ✔  checking for file ‘/Users/evangelinereynolds/Google Drive/r_packages/gguke/DESCRIPTION’ (360ms)
+#>   ─  preparing ‘gguke’: (2.6s)
 #>      checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
-#>   ─  checking for LF line-endings in source and make files and shell scripts (574ms)
+#>   ─  checking for LF line-endings in source and make files and shell scripts (683ms)
 #>   ─  checking for empty or unneeded directories
 #>   ─  building ‘gguke_0.0.0.9000.tar.gz’
 #>      
