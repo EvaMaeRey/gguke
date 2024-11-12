@@ -2,77 +2,29 @@
 - [gguke is under construction! 🚧 Feedback
   welcome!](#gguke-is-under-construction--feedback-welcome)
   - [**Chord info input**](#chord-info-input)
-    - [Translate to data frame. Can be used in
-      ggplot2](#translate-to-data-frame-can-be-used-in-ggplot2)
+  - [Build up slightly larger **chord
+    library**](#build-up-slightly-larger-chord-library)
+    - [Translate finger_str to fret, finger, string
+      info](#translate-finger_str-to-fret-finger-string-info)
     - [Make it a function…](#make-it-a-function)
-  - [then we need a **fret board**.](#then-we-need-a-fret-board)
-    - [make it once](#make-it-once)
-    - [looks good; make it a function](#looks-good-make-it-a-function)
+- [use parsing to expand dataframe to have row per finger
+  placement.](#use-parsing-to-expand-dataframe-to-have-row-per-finger-placement)
   - [now we’ll place **fingers positions** w/ point and
     text](#now-well-place-fingers-positions-w-point-and-text)
-    - [looks great! Make a function](#looks-great-make-a-function)
-  - [Okay, **add lyrics**](#okay-add-lyrics)
-    - [looks good… make it a
-      function!](#looks-good-make-it-a-function-1)
-    - [Test it out](#test-it-out)
-    - [test again with new chord
-      input](#test-again-with-new-chord-input)
-  - [Build up small **chord library**](#build-up-small-chord-library)
-    - [Lets include the chords as data in the package. We can add some
-      more later. Also, you can overwrite what’s here, if there is a
-      better
-      fingering.](#lets-include-the-chords-as-data-in-the-package-we-can-add-some-more-later-also-you-can-overwrite-whats-here-if-there-is-a-better-fingering)
-  - [from **lyric-chord data frame to
-    chart**…](#from-lyric-chord-data-frame-to-chart)
-    - [use a lyrics-chord data frame.](#use-a-lyrics-chord-data-frame)
-    - [Looks good!!! excited to put in a
-      function!](#looks-good-excited-to-put-in-a-function)
-  - [Holiday song! “Let it snow”](#holiday-song-let-it-snow)
-  - [gershwin](#gershwin)
   - [Part I.b](#part-ib)
     - [step 1. computation (will be left join of a chord
       library)](#step-1-computation-will-be-left-join-of-a-chord-library)
     - [step 2. pass to ggproto](#step-2-pass-to-ggproto)
     - [step 3. write geom_chord](#step-3-write-geom_chord)
-- [Part II. Packaging and documentation 🚧
-  ✅](#part-ii-packaging-and-documentation--)
-  - [Phase 1. Minimal working package](#phase-1-minimal-working-package)
-    - [Created files for **package architecture** with
-      `devtools::create(".")`
-      ✅](#created-files-for-package-architecture-with-devtoolscreate-)
-    - [Moved **functions R folder**? ✅](#moved-functions-r-folder-)
-    - [Added **roxygen skeleton**? 🚧](#added-roxygen-skeleton-)
-    - [Managed **dependencies** ? ✅](#managed-dependencies--)
-    - [Chosen a package **license**? 🚧](#chosen-a-package-license-)
-    - [Run `devtools::check()` and addressed errors?
-      🚧](#run-devtoolscheck-and-addressed-errors-)
-    - [Build package 🚧](#build-package-)
-    - [Make aspirational part of readme real.
-      🚧](#make-aspirational-part-of-readme-real-)
-    - [Add lifecycle badge
-      (experimental)](#add-lifecycle-badge-experimental)
-  - [Phase 2: Listen & iterate 🚧](#phase-2-listen--iterate-)
-  - [Phase 3: Let things settle](#phase-3-let-things-settle)
-    - [Settle on examples. Put them in the roxygen skeleton and readme.
-      🚧](#settle-on-examples-put-them-in-the-roxygen-skeleton-and-readme-)
-    - [Written formal tests of functions?
-      🚧](#written-formal-tests-of-functions-)
-    - [Have you worked added a description and author information in the
-      DESCRIPTION file?
-      🚧](#have-you-worked-added-a-description-and-author-information-in-the-description-file-)
-    - [Addressed *all* notes, warnings and errors.
-      🚧](#addressed-all-notes-warnings-and-errors-)
-  - [Promote to wider audience…](#promote-to-wider-audience)
-    - [Package website built? 🚧](#package-website-built-)
-    - [Package website deployed? 🚧](#package-website-deployed-)
-  - [Phase 3: Harden/commit](#phase-3-hardencommit)
-    - [Submit to CRAN? Or don’t. 🚧](#submit-to-cran-or-dont-)
-- [Appendix: Reports, Environment](#appendix-reports-environment)
-  - [Description file extract](#description-file-extract)
-  - [Environment](#environment)
-  - [`devtools::check()` report](#devtoolscheck-report)
-- [test functions from package, use :: (or
-  :::)](#test-functions-from-package-use--or-)
+  - [then we need a **fret board**.](#then-we-need-a-fret-board)
+    - [make it once](#make-it-once)
+    - [looks good; make it a function](#looks-good-make-it-a-function)
+  - [from **lyric-chord data frame to
+    chart**…](#from-lyric-chord-data-frame-to-chart)
+    - [use a lyrics-chord data frame.](#use-a-lyrics-chord-data-frame)
+  - [from text to chord-lyric data frame (w/ let it
+    snow)](#from-text-to-chord-lyric-data-frame-w-let-it-snow)
+  - [gershwin](#gershwin)
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
@@ -116,9 +68,75 @@ CM <-
 ----
 ----
 ---3"
+
+GM <- 
+"pppp
+----
+-1-2
+--3-"
+
+chord_library <- data.frame(chord_name = 
+                              c("CM", "GM"),
+                            fingering_str = 
+                              c(CM, GM)) 
+
+chord_library
+#>   chord_name          fingering_str
+#> 1         CM pppp\n----\n----\n---3
+#> 2         GM pppp\n----\n-1-2\n--3-
 ```
 
-### Translate to data frame. Can be used in ggplot2
+## Build up slightly larger **chord library**
+
+``` r
+# easy to write
+Dm <- 
+"pppp
+--1-
+23--
+----"
+
+# re-writen to save space
+GM <- "pppp\n----\n-1-2\n--3-"
+E7M <- "pppp\n1---\n-2-3\n----"
+AM <- "pppp\n-1--\n2---\n----"
+DM <- "pppp\n----\n123-\n----"
+Dbm <- "pppp\n12--\n----\n----"
+`F#m` <- "pppp\n-1--\n2-3-\n----"
+D7M <- "pppp\n----\n1111\n---2"
+A7M <- "pppp\n-1--\n----\n----"
+Am <- "pppp\n1---\n----\n----"
+Am7 <- "pppp\n----\n----\n----"
+Bm <- "pppp\n----\n-111\n----\n3---"
+Em <- "pppp\n----\n---1\n----\n-3--"
+```
+
+``` r
+chord_library <- tibble(chord_name = 
+c("CM", "GM", "Dm", "E7M", "AM","DM", "Dbm", "F#m", "D7M", "A7M", "Am", "Am7", "Bm", "Em"),
+fingering_str = 
+c(CM, GM, Dm, E7M, AM, DM, Dbm, `F#m`, D7M, A7M, Am, Am7, Bm, Em))
+chord_library
+#> # A tibble: 14 × 2
+#>    chord_name fingering_str                 
+#>    <chr>      <chr>                         
+#>  1 CM         "pppp\n----\n----\n---3"      
+#>  2 GM         "pppp\n----\n-1-2\n--3-"      
+#>  3 Dm         "pppp\n--1-\n23--\n----"      
+#>  4 E7M        "pppp\n1---\n-2-3\n----"      
+#>  5 AM         "pppp\n-1--\n2---\n----"      
+#>  6 DM         "pppp\n----\n123-\n----"      
+#>  7 Dbm        "pppp\n12--\n----\n----"      
+#>  8 F#m        "pppp\n-1--\n2-3-\n----"      
+#>  9 D7M        "pppp\n----\n1111\n---2"      
+#> 10 A7M        "pppp\n-1--\n----\n----"      
+#> 11 Am         "pppp\n1---\n----\n----"      
+#> 12 Am7        "pppp\n----\n----\n----"      
+#> 13 Bm         "pppp\n----\n-111\n----\n3---"
+#> 14 Em         "pppp\n----\n---1\n----\n-3--"
+```
+
+### Translate finger_str to fret, finger, string info
 
 Then translate that to data frame that records string, fret, and finger
 that will play each note. I’m just doing the first thing that came to
@@ -146,6 +164,9 @@ data.frame(finger = chart) %>%
 #>   finger fret string
 #> 1      3    3      4
 ```
+
+🤔 maybe read.delim(delim = ““), would work better and feel more
+grokable that this string split business! :-)
 
 ### Make it a function…
 
@@ -188,8 +209,53 @@ parse_chord()[[2]]
 #> 1      3    3      4
 ```
 
-🤔 maybe read.delim(delim = ““), would work better and feel more
-grokable that this string split business! :-)
+# use parsing to expand dataframe to have row per finger placement.
+
+``` r
+parse_chord_fingering <- function(chord){
+  
+  parse_chord(chord)[[2]]
+  
+}
+
+chord_library_parse_chords <- function(chord_library){
+
+parsed_chords <- list()
+
+for (i in 1:nrow(chord_library)){
+  
+  parsed_chords[[i]] <- parse_chord_fingering(chord_library$fingering_str[i])
+  
+}
+
+chord_library$phrase_chord_id <- 1:nrow(chord_library)
+chord_library$parsed_chords <- parsed_chords
+
+chord_library %>% 
+  unnest(parsed_chords)
+
+}
+```
+
+``` r
+chord_library_parsed <- chord_library %>% chord_library_parse_chords() 
+
+chord_library_parsed
+#> # A tibble: 33 × 6
+#>    chord_name fingering_str            phrase_chord_id finger  fret string
+#>    <chr>      <chr>                              <int>  <dbl> <int>  <int>
+#>  1 CM         "pppp\n----\n----\n---3"               1      3     3      4
+#>  2 GM         "pppp\n----\n-1-2\n--3-"               2      1     2      2
+#>  3 GM         "pppp\n----\n-1-2\n--3-"               2      2     2      4
+#>  4 GM         "pppp\n----\n-1-2\n--3-"               2      3     3      3
+#>  5 Dm         "pppp\n--1-\n23--\n----"               3      1     1      3
+#>  6 Dm         "pppp\n--1-\n23--\n----"               3      2     2      1
+#>  7 Dm         "pppp\n--1-\n23--\n----"               3      3     2      2
+#>  8 E7M        "pppp\n1---\n-2-3\n----"               4      1     1      1
+#>  9 E7M        "pppp\n1---\n-2-3\n----"               4      2     2      2
+#> 10 E7M        "pppp\n1---\n-2-3\n----"               4      3     2      4
+#> # ℹ 23 more rows
+```
 
 ``` r
 usethis::use_pipe()
@@ -202,6 +268,126 @@ knitrExtra:::chunk_to_r("parse_chord")
 #> It seems you are currently knitting a Rmd/Qmd file. The parsing of the file will be done in a new R session.
 ```
 
+## now we’ll place **fingers positions** w/ point and text
+
+``` r
+data.frame(lyric = c("hello", "goodbye"), 
+           chord_name = c("CM", "GM")) %>% 
+  inner_join(chord_library %>% chord_library_parse_chords()) %>%
+  ggplot() + 
+  facet_wrap(~paste(phrase_chord_id, lyric, chord_name)) +
+  geom_point(size = 15, 
+             aes(x = string, y = fret + .5),
+             color = "white"
+             ) +
+  geom_point(size = 15, pch = 21, alpha = .6,
+             aes(x = string, y = fret + .5,
+                 fill = finger), 
+             ) +
+  geom_text(size = 10,
+            aes(x = string, y = fret + .5, label = finger)
+            )  + 
+  scale_y_reverse() + 
+  coord_equal(xlim = c(1,4), ylim = c(4, 1))
+#> Joining with `by = join_by(chord_name)`
+```
+
+![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+## Part I.b
+
+Make it more ggplot2 grammatical
+
+### step 1. computation (will be left join of a chord library)
+
+``` r
+chord_library %>% 
+  chord_library_parse_chords() ->
+chord_library_parsed
+
+compute_group_uke_fingering <- function(data, scales, chord_library = chord_library_parsed){
+
+  data %>% 
+    mutate(row = row_number()) %>% 
+    left_join(chord_library_parsed %>% 
+                rename(chord = chord_name)) %>% 
+    mutate(x = string)
+  
+}
+```
+
+### step 2. pass to ggproto
+
+``` r
+StatUkefingers <- ggplot2::ggproto(
+  `_class` = "StatUkefingers",
+  `_inherit` = ggplot2::Stat,
+  required_aes = c("chord"),
+  compute_panel = compute_group_uke_fingering,
+  default_aes = ggplot2::aes(label = after_stat(finger), 
+                             # color = after_stat(finger),
+                             fill  = after_stat(finger),
+                             y = after_stat(fret+.5)))
+```
+
+### step 3. write geom_chord
+
+``` r
+library(statexpress)
+
+
+stat_chord <- function(...){
+  
+  qlayer(stat = StatUkefingers,
+         geom = qproto_update(GeomPoint, 
+                              aes(fill = "white", 
+                                  size = 15, 
+                                  shape = 21)), ...)
+  
+}
+
+geom_chord <- stat_chord
+
+geom_chord_text <- function(...){
+  
+    qlayer(stat = StatUkefingers,
+           geom = qproto_update(GeomText, 
+                                aes(size = 10)),...)
+
+}
+```
+
+``` r
+tribble(~lyric, ~chord_name,
+"Mary had a little lamb,",  "CM",   
+"little lamb,", "GM",
+"little lamb.", "CM",
+"Mary had a little lamb...",    "CM") %>% 
+  ggplot() + 
+  scale_color_viridis_c() +
+  aes(chord = chord_name) + 
+  geom_chord(fill = "white") +
+  geom_chord(alpha = .6, color = "black") + 
+  geom_chord_text(color = "black", size = 10) + 
+  facet_wrap(~fct_inorder(lyric)) + 
+  scale_y_reverse() + 
+  coord_equal(xlim = c(1,4), ylim = c(4, 1))
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+```
+
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
 ## then we need a **fret board**.
 
 ### make it once
@@ -209,13 +395,14 @@ knitrExtra:::chunk_to_r("parse_chord")
 ``` r
 library(ggplot2)
 ggplot() + 
-  annotate(geom = "segment", x = 1:4, y = .5, 
-           xend = 1:4, yend = 5, linewidth = 3) + 
-  annotate(geom = "segment", y = 0:4 +.5, 
-           yend = 0:4 +.5, x = 1, xend = 4, linewidth = 3) + 
+  annotate(geom = "segment", x = 1:4, y = 0, 
+           xend = 1:4, yend = 5, linewidth = 3,
+  lineend = "round") + 
+  annotate(geom = "segment", y = 0:4, 
+           yend = 0:4, x = 1, xend = 4, linewidth = 3) + 
   scale_y_reverse() + 
   scale_x_continuous(expand = expansion(.2)) +
-  theme_void() + 
+  # theme_void() + 
   coord_equal() +
   scale_fill_viridis_c(limits = c(1,4), guide = F)
 #> Warning: The `guide` argument in `scale_*()` cannot be `FALSE`. This was deprecated in
@@ -226,17 +413,20 @@ ggplot() +
 #> generated.
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 ### looks good; make it a function
 
 ``` r
 stamp_fretboard <- function(){
   
-  list(annotate(geom = "segment", x = 1:4, y = .5, 
-           xend = 1:4, yend = 5, linewidth = 3),
-  annotate(geom = "segment", y = 0:4 +.5, 
-           yend = 0:4 +.5, x = 1, xend = 4, linewidth = 3),
+  list(
+    annotate(geom = "segment", x = 1:4, y = 0, 
+           xend = 1:4, yend = 5, linewidth = 3,
+  lineend = "round"),
+  annotate(geom = "segment", y = 0:4, 
+           yend = 0:4, x = 1, xend = 4, linewidth = 3,
+  lineend = "butt"),
   scale_y_reverse(),
   scale_x_continuous(expand = expansion(.2)),
   theme_void(),
@@ -253,317 +443,41 @@ gguke <- function(data){
 }
 ```
 
+``` r
+tribble(~lyric, ~chord_name,
+"Mary had a little lamb,",  "CM",   
+"little lamb,", "GM",
+"little lamb.", "CM",
+"Mary had a little lamb...",    "CM") %>% 
+  gguke() + 
+  scale_color_viridis_c() +
+  aes(chord = chord_name) + 
+  geom_chord(fill = "white") +
+  geom_chord(alpha = .6, color = "black") + 
+  geom_chord_text(color = "black", size = 10) + 
+  facet_wrap(~fct_inorder(lyric))
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+#> Joining with `by = join_by(chord)`
+```
+
+![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+
 🤔 maybe gguke() would be better 🤔 maybe a coord_uke could be a
 long-term goal.
 
 ``` r
 knitrExtra:::chunk_to_r("uke_fretboard")
 #> It seems you are currently knitting a Rmd/Qmd file. The parsing of the file will be done in a new R session.
-```
-
-## now we’ll place **fingers positions** w/ point and text
-
-``` r
-gguke(cars) + 
-  geom_point(data = parse_chord()[[2]],
-             size = 15, 
-             aes(x = string, y = fret),
-             color = "white"
-             ) +
-  geom_point(data = parse_chord()[[2]],
-             size = 15, pch = 21, alpha = .6,
-             aes(x = string, y = fret,
-                 fill = finger), 
-             ) +
-  geom_text(data = parse_chord()[[2]],
-             size = 10,
-             aes(x = string, y = fret, label = finger)
-             )
-```
-
-![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
-
-### looks great! Make a function
-
-``` r
-add_chord_fingering <- function(chord = CM){
-  
-   list(  geom_point(data = parse_chord(chord)[[2]],
-             size = 15,
-             aes(x = string, y = fret),
-             color = "white"
-             ) ,
-  geom_point(data = parse_chord(chord)[[2]],
-             size = 15, pch = 21, alpha = .6,
-             aes(x = string, y = fret,
-                 fill = finger),
-             ) ,
-  geom_text(data = parse_chord(chord)[[2]],
-             size = 10,
-             aes(x = string, y = fret, label = finger)
-             )
-   )
-}
-```
-
-``` r
-knitrExtra:::chunk_to_r("add_chord_fingering")
-#> It seems you are currently knitting a Rmd/Qmd file. The parsing of the file will be done in a new R session.
-```
-
-## Okay, **add lyrics**
-
-``` r
-gguke(cars) +
-  add_chord_fingering() +
-  labs(caption = "Come stop your cryin', it'll be all right" %>% str_wrap(28)) + 
-  theme(text = element_text(size = 23))
-```
-
-![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
-
-### looks good… make it a function!
-
-``` r
-
-add_lyric <- function(lyric = "Come stop your cryin', it'll be all right"){
-  
-    list(labs(caption = lyric %>% str_wrap(28)),
-         theme(text = element_text(size = 23)))
-  
-  
-}
-```
-
-``` r
-knitrExtra:::chunk_to_r("add_lyric")
-#> It seems you are currently knitting a Rmd/Qmd file. The parsing of the file will be done in a new R session.
-```
-
-### Test it out
-
-``` r
-gguke(cars) + 
-  add_chord_fingering(CM) + 
-  add_lyric("Just take my hand and hold it tight")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
-
-### test again with new chord input
-
-``` r
-
-FM <- 
-"pppp
---1-
-2---
-----"
-
-gguke(cars) + 
-  add_chord_fingering(FM) + 
-  add_lyric("I will protect you from all around you")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
-
-## Build up small **chord library**
-
-``` r
-Dm <- 
-"pppp
---1-
-23--
-----"
-
-GM <- 
-"pppp
-----
--1-2
---3-"
-
-E7M <- 
-"pppp
-1---
--2-3
-----"
-
-AM <- 
-"pppp
--1--
-2---
-----"
-
-DM <- 
-"pppp
-----
-123-
-----"
-
-Dbm <- 
-"pppp
-12--
-----
-----"
-
-Fsm <- 
-"pppp
--1--
-2-3-
-----"
-
-
-D7M <- 
-"pppp
-----
-1111
----2"
-
-
-A7M <- 
-"pppp
--1--
-----
-----"
-
-
-Am <- 
-"pppp
-1---
-----
-----"
-
-
-Am7 <- 
-"pppp
-----
-----
-----"
-
-Bm <- 
-"pppp
-----
--111
-----
-3---"
-
-
-Em <- 
-"pppp
-----
----1
-----
--3--"
-
-G <- GM
-D <- DM
-E7 <- E7M
-A7 <- A7M
-D7 <- D7M
-```
-
-### Lets include the chords as data in the package. We can add some more later. Also, you can overwrite what’s here, if there is a better fingering.
-
-Would like to use \# but using s for sharp since \# is a special
-character… Feels a little weird.
-
-``` r
-usethis::use_data(CM, overwrite = T)
-#> ✔ Saving 'CM' to 'data/CM.rda'
-#> • Document your data (see 'https://r-pkgs.org/data.html')
-```
-
-``` r
-usethis::use_data(FM, overwrite = T)
-#> ✔ Saving 'FM' to 'data/FM.rda'
-#> • Document your data (see 'https://r-pkgs.org/data.html')
-```
-
-``` r
-usethis::use_data(Dm, overwrite = T)
-#> ✔ Saving 'Dm' to 'data/Dm.rda'
-#> • Document your data (see 'https://r-pkgs.org/data.html')
-```
-
-``` r
-usethis::use_data(GM, overwrite = T)
-#> ✔ Saving 'GM' to 'data/GM.rda'
-#> • Document your data (see 'https://r-pkgs.org/data.html')
-```
-
-``` r
-usethis::use_data(E7M, overwrite = T)
-#> ✔ Saving 'E7M' to 'data/E7M.rda'
-#> • Document your data (see 'https://r-pkgs.org/data.html')
-```
-
-``` r
-usethis::use_data(AM, overwrite = T)
-#> ✔ Saving 'AM' to 'data/AM.rda'
-#> • Document your data (see 'https://r-pkgs.org/data.html')
-```
-
-``` r
-usethis::use_data(DM, overwrite = T)
-#> ✔ Saving 'DM' to 'data/DM.rda'
-#> • Document your data (see 'https://r-pkgs.org/data.html')
-```
-
-``` r
-usethis::use_data(Dbm, overwrite = T)
-#> ✔ Saving 'Dbm' to 'data/Dbm.rda'
-#> • Document your data (see 'https://r-pkgs.org/data.html')
-```
-
-``` r
-usethis::use_data(Fsm, overwrite = T)
-#> ✔ Saving 'Fsm' to 'data/Fsm.rda'
-#> • Document your data (see 'https://r-pkgs.org/data.html')
-```
-
-``` r
-"CM"
-#> [1] "CM"
-```
-
-``` r
-"FM"
-#> [1] "FM"
-```
-
-``` r
-"Dm"
-#> [1] "Dm"
-```
-
-``` r
-"GM"
-#> [1] "GM"
-```
-
-``` r
-"E7M"
-#> [1] "E7M"
-```
-
-``` r
-"AM"
-#> [1] "AM"
-```
-
-``` r
-"DM"
-#> [1] "DM"
-```
-
-``` r
-"Dbm"
-#> [1] "Dbm"
-```
-
-``` r
-"Fsm"
-#> [1] "Fsm"
 ```
 
 ## from **lyric-chord data frame to chart**…
@@ -595,165 +509,9 @@ lyric_chord_df <- tibble::tribble(~lyric, ~chord_name,
 "You'll be here in my... ", "AM", 
 " heart", "DM",
 "Always", "GM")
-
-lyric_chord_df %>% pull(chord_name) %>% unique()
-#> [1] "CM"  "FM"  "Dm"  "GM"  "E7M" "AM"  "DM"  "Dbm"
 ```
 
-``` r
-
-
-parse_chord2 <- function(chord){parse_chord(chord)[[2]]}
-
-Dm
-#> [1] "pppp\n--1-\n23--\n----"
-```
-
-``` r
-lyric_chord_df[1:6,] %>% #just vis first six lyric-chord pairs
-  mutate(phrase = row_number()) %>% 
-  mutate(fingering_str = map(chord_name, get)) ->
-lyric_chord_df_flat
-
-
-lyric_chord_df_flat %>% 
-  unnest(cols = c(fingering_str)) %>% 
-  mutate(fingering = map(fingering_str, parse_chord2)) %>% 
-  unnest(cols = c(fingering)) ->
-lyric_chord_df_fingering
-  
-lyric_chord_df_fingering %>% 
-  ggplot() +
-  annotate(geom = "segment", x = 1:4, y = .5, 
-           xend = 1:4, yend = 5, linewidth = 1) + 
-  annotate(geom = "segment", y = 0:4 +.5, 
-           yend = 0:4 +.5, x = 1, xend = 4, linewidth = 1) +
-  aes(x = string, y = fret, label = finger) + 
-  geom_point(size = 6, color = "white") +
-  geom_point(size = 6, pch= 21, aes(fill = finger), alpha = .7 , show.legend = F) +
-  geom_text() +
-  facet_wrap(~ paste0("phrase ", phrase,": ", chord_name) %>% fct_inorder()) + 
-  geom_text(data = lyric_chord_df_flat,
-            x = 1, y = -5.5, size = 3,
-            aes(label = lyric %>% str_wrap(28)),
-            hjust = 0,
-            vjust = 1) + 
-  scale_y_reverse(limits = c(7, .5)) + 
-  coord_equal() + 
-  scale_fill_viridis_c(end = .9) + 
-  scale_x_continuous(expand = expansion(.6)) + 
-  theme_void()
-```
-
-![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
-
-``` r
-
-ggwipe::last_plot_wipe(index = 4) + 
-    geom_point(size = 6, pch= 21, fill = alpha("white", 0), show.legend = F) 
-```
-
-![](README_files/figure-gfm/unnamed-chunk-15-2.png)<!-- -->
-
-### Looks good!!! excited to put in a function!
-
-``` r
-
-parse_chord2 <- function(chord){parse_chord(chord)[[2]]}
-
-
-lyric_chord_df_to_chart <- function(lyric_chord_df, bw = F){
-  
-  lyric_chord_df %>% 
-  mutate(phrase = row_number()) %>% 
-  mutate(fingering_str = map(chord_name, get)) ->
-lyric_chord_df_flat
-
-lyric_chord_df_flat %>% 
-  unnest(cols = c(fingering_str)) %>% 
-  mutate(fingering = map(fingering_str, parse_chord2)) %>% 
-  unnest(cols = c(fingering)) ->
-lyric_chord_df_fingering
-  
-lyric_chord_df_fingering %>% 
-  ggplot() +
-  annotate(geom = "segment", x = 1:4, y = .5, 
-           xend = 1:4, yend = 5, linewidth = 1) + 
-  annotate(geom = "segment", y = 0:4 +.5, 
-           yend = 0:4 +.5, x = 1, xend = 4, linewidth = 1) +
-  aes(x = string, y = fret, label = finger) + 
-  geom_point(size = 6, color = "white") +
-  geom_point(size = 6, pch= 21, aes(fill = finger), alpha = .7 , show.legend = F) +
-  geom_text() +
-  facet_wrap(~ paste0("phrase ", phrase,": ", chord_name) %>% fct_inorder()) +
-  geom_text(data = lyric_chord_df_flat,
-            x = 1, y = -5.5, size = 3,
-            aes(label = lyric %>% str_wrap(28)),
-            hjust = 0,
-            vjust = 1) + 
-  scale_y_reverse(limits = c(7, .5)) + 
-  coord_equal() + 
-  scale_fill_viridis_c(end = .9) + 
-  scale_x_continuous(expand = expansion(.6)) + 
-  theme_void() ->
-plot
-
-
-if(bw){
-  plot$layers[[4]] <- NULL
- plot + 
-    geom_point(size = 6, pch= 21, fill = alpha("white", 0), show.legend = F)->
-   plot
-}
-  
-plot
-
-}
-```
-
-``` r
-knitrExtra:::chunk_to_r("lyric_chord_df_to_chart")
-#> It seems you are currently knitting a Rmd/Qmd file. The parsing of the file will be done in a new R session.
-```
-
-``` r
-lyric_chord_df_to_chart(lyric_chord_df[1:6,])
-```
-
-![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
-
-``` r
-lyric_chord_df_to_chart(lyric_chord_df[7:12,])
-```
-
-![](README_files/figure-gfm/unnamed-chunk-17-2.png)<!-- -->
-
-``` r
-lyric_chord_df_to_chart(lyric_chord_df[13:18,])
-```
-
-![](README_files/figure-gfm/unnamed-chunk-17-3.png)<!-- -->
-
-``` r
-lyric_chord_df_to_chart(lyric_chord_df[19:21,])
-```
-
-![](README_files/figure-gfm/unnamed-chunk-17-4.png)<!-- -->
-
-``` r
-
-a_cool_song <- tibble::tribble(~lyric, ~chord_name,
-                       "This is my cool lyric", "CM",
-                       "This is another", "DM",
-                       "hi", "GM",
-                       "hola hola!", "E7M")
-
-lyric_chord_df_to_chart(lyric_chord_df = a_cool_song, bw = T) 
-```
-
-![](README_files/figure-gfm/unnamed-chunk-17-5.png)<!-- -->
-
-## Holiday song! “Let it snow”
+## from text to chord-lyric data frame (w/ let it snow)
 
 ``` r
 song <- readLines("Untitled.txt")
@@ -804,18 +562,6 @@ snow_from_txt
 ```
 
 ``` r
-lyric_chord_df_to_chart(snow_from_txt[2:7,], bw = T)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
-
-``` r
-lyric_chord_df_to_chart(snow_from_txt[8:13,], bw = T)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-19-2.png)<!-- -->
-
-``` r
 
 txt_chord_lyrics_to_df <- function(path){
 
@@ -836,6 +582,7 @@ combine <- function(x, y){
   c(x, y)
   
 }
+
 tibble(song_line, characters, element)  %>% 
   mutate(num_char = map_dbl(characters, length)) %>% 
   group_by(song_line) %>% 
@@ -861,8 +608,6 @@ tibble(song_line, characters, element)  %>%
 
 ## gershwin
 
-- “F” chord reared it’s ugly head, I find/replaced with FM but maybe
-  this can be better managed
 - There may have been a problem with phrases that don’t start with a new
   chord. I worked on it in the text file.
 
@@ -873,426 +618,25 @@ gershwin_ly_ch_df <- txt_chord_lyrics_to_df("gershwin.txt")
 #> ℹ Please use `cols = c(chord, lyric)`.
 ```
 
-``` r
-dim(gershwin_ly_ch_df)
-#> [1] 38  3
-```
-
-``` r
-lyric_chord_df_to_chart(gershwin_ly_ch_df[1:6,]  , bw = T)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
-
-``` r
-lyric_chord_df_to_chart(gershwin_ly_ch_df[7:12,] , bw = T)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-21-2.png)<!-- -->
-
-``` r
-lyric_chord_df_to_chart(gershwin_ly_ch_df[13:18,], bw = T)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-21-3.png)<!-- -->
-
-``` r
-lyric_chord_df_to_chart(gershwin_ly_ch_df[19:24,], bw = T)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-21-4.png)<!-- -->
-
-``` r
-lyric_chord_df_to_chart(gershwin_ly_ch_df[25:30,], bw = T)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-21-5.png)<!-- -->
-
-``` r
-lyric_chord_df_to_chart(gershwin_ly_ch_df[31:36,], bw = T)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-21-6.png)<!-- -->
-
-``` r
-lyric_chord_df_to_chart(gershwin_ly_ch_df[37:38,], bw = T)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-21-7.png)<!-- -->
-
-## Part I.b
-
-Make it more ggplot2 grammatical
-
-### step 1. computation (will be left join of a chord library)
-
-``` r
-#' Title
-#'
-#' @param chords 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-#' build_chord_library(c("Am7","CM", "DM", "E7M"))
-build_chord_library <- function(chords){
-  
-  out <- data.frame()
-  
-  for(i in 1:length(chords)){
-    
-    chord_df <- parse_chord(get(chords[i]))[[2]]
-    if(nrow(chord_df)>=1){chord_df$chord <- chords[i]}
-    
-    out <- bind_rows(out, chord_df)                       
-                           
-  }
-  
-  out 
-  
-  
-}
-
-chord_library <- gershwin_ly_ch_df$chord_name[1:4] %>%   build_chord_library()
-
-compute_group_uke_chord <- function(data, scales, chord_library){
-
-  # chord_library <- build_chord_library(data$chord)
-  
-  data %>% 
-    mutate(row = row_number()) %>% 
-    left_join(chord_library, by = "chord") %>% 
-    mutate(x = string) %>% 
-    mutate(y = -fret)
-  
-}
-```
-
 Test…
 
 ``` r
 gershwin_ly_ch_df[1:4,] %>% 
   rename(chord = chord_name) %>% 
-  compute_group_uke_chord(chord_library = chord_library)
-#> # A tibble: 11 × 9
-#>    id_chord_phrase lyric             chord   row finger  fret string     x     y
-#>              <int> <chr>             <chr> <int>  <dbl> <int>  <int> <int> <int>
-#>  1               0 "Its very clear " D7        1      1     2      1     1    -2
-#>  2               0 "Its very clear " D7        1      1     2      2     2    -2
-#>  3               0 "Its very clear " D7        1      1     2      3     3    -2
-#>  4               0 "Its very clear " D7        1      1     2      4     4    -2
-#>  5               0 "Its very clear " D7        1      2     3      4     4    -3
-#>  6               1 "Our love is"     FM        2      1     1      3     3    -1
-#>  7               1 "Our love is"     FM        2      2     2      1     1    -2
-#>  8               2 " here to"        Dm        3      1     1      3     3    -1
-#>  9               2 " here to"        Dm        3      2     2      1     1    -2
-#> 10               2 " here to"        Dm        3      3     2      2     2    -2
-#> 11               3 " stay"           Am7       4     NA    NA     NA    NA    NA
-```
-
-### step 2. pass to ggproto
-
-``` r
-StatUkefingers <- ggplot2::ggproto(
-  `_class` = "StatUkefingers",
-  `_inherit` = ggplot2::Stat,
-  required_aes = c("chord"),
-  compute_panel = compute_group_uke_chord,
-  default_aes = ggplot2::aes(label = after_stat(finger), 
-                             color = after_stat(finger),
-                             fill  = after_stat(finger)))
-```
-
-### step 3. write geom_chord
-
-``` r
-stat_chord <- function(
-  mapping = NULL,
-  data = NULL,
-  position = "identity",
-  na.rm = FALSE,
-      geom = ggplot2::GeomPoint,  # inherit other behavior
-
-  show.legend = NA,
-  inherit.aes = TRUE, ...) {
-  ggplot2::layer(
-    stat = StatUkefingers,  # proto object from step 2
-    data = data,
-    geom = geom,
-    mapping = mapping,
-    position = position,
-    show.legend = show.legend,
-    inherit.aes = inherit.aes,
-    params = list(na.rm = na.rm, ...)
-  )
-}
-
-geom_chord <- function(size = 15, pch = 21, color = "black", ...){
-  
-  stat_chord(size = size, pch = pch, color = color, ...)
-  
-}
-
-geom_chord_finger <- function(color = "black", size = 10, ...){
-  
-  stat_chord(geom = "text", color = color, size = size, ...)
-  
-}
+  compute_group_uke_fingering(chord_library = chord_library_parsed)
+#> Joining with `by = join_by(chord)`
+#> # A tibble: 6 × 10
+#>   id_chord_phrase lyric   chord   row fingering_str phrase_chord_id finger  fret
+#>             <int> <chr>   <chr> <int> <chr>                   <int>  <dbl> <int>
+#> 1               0 "Its v… D7        1  <NA>                      NA     NA    NA
+#> 2               1 "Our l… FM        2  <NA>                      NA     NA    NA
+#> 3               2 " here… Dm        3 "pppp\n--1-\…               3      1     1
+#> 4               2 " here… Dm        3 "pppp\n--1-\…               3      2     2
+#> 5               2 " here… Dm        3 "pppp\n--1-\…               3      3     2
+#> 6               3 " stay" Am7       4  <NA>                      NA     NA    NA
+#> # ℹ 2 more variables: string <int>, x <int>
 ```
 
 ``` r
-
-tribble(~lyric, ~chord_name,
-"Its very clear",   "D7",   
-"Our love is",  "FM",
-"here to",  "Dm",
-"stay", "Am7") %>% 
-  gguke() + 
-  scale_color_viridis_c() +
-  aes(chord = chord_name) + 
-  geom_chord(fill = "white") +
-  geom_chord(alpha = .6, color = "black") + 
-  geom_chord_finger(color = "black", size = 10) + 
-  facet_wrap(~fct_inorder(lyric)) + 
-  theme_void(base_size = 20)
+knitr::knit_exit()
 ```
-
-![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
-
-``` r
-
-
-chord_library <- build_chord_library(c("CM", "GM"))
-
-tribble(~lyric, ~chord_name,
-"Mary had a little lamb,",  "CM",   
-"little lamb,", "GM",
-"little lamb.", "CM",
-"Mary had a little lamb...",    "CM") %>% 
-  gguke() + 
-  scale_color_viridis_c() +
-  aes(chord = chord_name) + 
-  geom_chord(fill = "white") +
-  geom_chord(alpha = .6, color = "black") + 
-  geom_chord_finger(color = "black", size = 10) + 
-  facet_wrap(~fct_inorder(lyric)) + 
-  theme_void(base_size = 20)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-26-2.png)<!-- -->
-
-# Part II. Packaging and documentation 🚧 ✅
-
-## Phase 1. Minimal working package
-
-### Created files for **package architecture** with `devtools::create(".")` ✅
-
-### Moved **functions R folder**? ✅
-
-``` r
-knitr::knit_code$get() |> names()
-#>  [1] "unnamed-chunk-1"           "cars"                     
-#>  [3] "unnamed-chunk-2"           "parse_chord"              
-#>  [5] "unnamed-chunk-3"           "unnamed-chunk-4"          
-#>  [7] "unnamed-chunk-5"           "uke_fretboard"            
-#>  [9] "unnamed-chunk-6"           "unnamed-chunk-7"          
-#> [11] "add_chord_fingering"       "unnamed-chunk-8"          
-#> [13] "unnamed-chunk-9"           "add_lyric"                
-#> [15] "unnamed-chunk-10"          "unnamed-chunk-11"         
-#> [17] "unnamed-chunk-12"          "unnamed-chunk-13"         
-#> [19] "unnamed-chunk-14"          "data"                     
-#> [21] "unnamed-chunk-15"          "lyric_chord_df_to_chart"  
-#> [23] "unnamed-chunk-16"          "unnamed-chunk-17"         
-#> [25] "unnamed-chunk-18"          "unnamed-chunk-19"         
-#> [27] "unnamed-chunk-20"          "unnamed-chunk-21"         
-#> [29] "unnamed-chunk-22"          "unnamed-chunk-23"         
-#> [31] "unnamed-chunk-24"          "unnamed-chunk-25"         
-#> [33] "unnamed-chunk-26"          "unnamed-chunk-27"         
-#> [35] "unnamed-chunk-28"          "unnamed-chunk-29"         
-#> [37] "unnamed-chunk-30"          "unnamed-chunk-31"         
-#> [39] "unnamed-chunk-32"          "unnamed-chunk-33"         
-#> [41] "test_calc_frequency_works" "unnamed-chunk-34"         
-#> [43] "unnamed-chunk-35"          "unnamed-chunk-36"         
-#> [45] "unnamed-chunk-37"          "unnamed-chunk-38"         
-#> [47] "unnamed-chunk-39"
-```
-
-Use new {readme2pkg} function to do this from readme if you haven’t
-already
-
-``` r
-# readme2pkg::chunk_to_r("")
-```
-
-### Added **roxygen skeleton**? 🚧
-
-Use a roxygen skeleton for auto documentation and making sure proposed
-functions are *exported*.
-
-We haven’t done this which means none of the functions are exported. To
-access them we need to use ‘gguke:::’ syntax.
-
-### Managed **dependencies** ? ✅
-
-Package dependencies managed, i.e. `depend::function()` in proposed
-functions and declared in the DESCRIPTION
-
-``` r
-usethis::use_package("ggplot2")
-usethis::use_package("dplyr")
-```
-
-### Chosen a package **license**? 🚧
-
-``` r
-usethis::use_mit_license()
-```
-
-### Run `devtools::check()` and addressed errors? 🚧
-
-``` r
-devtools::check(pkg = ".")
-```
-
-### Build package 🚧
-
-``` r
-devtools::build()
-```
-
-You need to do this before Part 0 in this document will work.
-
-### Make aspirational part of readme real. 🚧
-
-At this point, you could change eval chunk options to TRUE. You can
-remove the 🦄 emoji and perhaps replace it with construction site if you
-are still uncertain of the API, and want to highlight that it is subject
-to change.
-
-### Add lifecycle badge (experimental)
-
-``` r
-usethis::use_lifecycle_badge("experimental")
-```
-
-## Phase 2: Listen & iterate 🚧
-
-Try to get feedback from experts on API, implementation, default
-decisions. Is there already work that solves this problem?
-
-## Phase 3: Let things settle
-
-### Settle on examples. Put them in the roxygen skeleton and readme. 🚧
-
-### Written formal tests of functions? 🚧
-
-That would look like this…
-
-``` r
-library(testthat)
-
-test_that("calc frequency works", {
-  expect_equal(calc_frequency("A", 0), 440)
-  expect_equal(calc_frequency("A", -1), 220)
-  
-})
-```
-
-``` r
-knitrExtra:::chunk_to_tests_testthat("test_calc_frequency_works")
-```
-
-### Have you worked added a description and author information in the DESCRIPTION file? 🚧
-
-### Addressed *all* notes, warnings and errors. 🚧
-
-## Promote to wider audience…
-
-### Package website built? 🚧
-
-### Package website deployed? 🚧
-
-## Phase 3: Harden/commit
-
-### Submit to CRAN? Or don’t. 🚧
-
-# Appendix: Reports, Environment
-
-## Description file extract
-
-## Environment
-
-Here I just want to print the packages and the versions
-
-``` r
-all <- sessionInfo() |> print() |> capture.output()
-all[11:17]
-#> [1] ""                                                                         
-#> [2] "time zone: America/Denver"                                                
-#> [3] "tzcode source: internal"                                                  
-#> [4] ""                                                                         
-#> [5] "attached base packages:"                                                  
-#> [6] "[1] stats     graphics  grDevices utils     datasets  methods   base     "
-#> [7] ""
-```
-
-## `devtools::check()` report
-
-``` r
-devtools::check(pkg = ".")
-#> ℹ Installed roxygen2 version (7.3.1) doesn't match required (7.2.3)
-#> ✖ `check()` will not re-document this package
-#> Error: R CMD check found WARNINGs
-```
-
-``` r
-devtools::build(".")
-#> ── R CMD build ─────────────────────────────────────────────────────────────────
-#>      checking for file ‘/Users/evangelinereynolds/Google Drive/r_packages/gguke/DESCRIPTION’ ...  ✔  checking for file ‘/Users/evangelinereynolds/Google Drive/r_packages/gguke/DESCRIPTION’ (360ms)
-#>   ─  preparing ‘gguke’: (2.6s)
-#>      checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
-#>   ─  checking for LF line-endings in source and make files and shell scripts (683ms)
-#>   ─  checking for empty or unneeded directories
-#>   ─  building ‘gguke_0.0.0.9000.tar.gz’
-#>      
-#> 
-#> [1] "/Users/evangelinereynolds/Google Drive/r_packages/gguke_0.0.0.9000.tar.gz"
-```
-
-# test functions from package, use :: (or :::)
-
-``` r
-library(gguke)
-data("Dm")
-
-gguke:::uke_fretboard() + 
-  gguke:::add_chord_fingering() + 
-  gguke:::add_lyric()
-```
-
-![](README_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
-
-``` r
-
-
-gguke:::uke_fretboard() + 
-  gguke:::add_chord_fingering(Fsm) + 
-  gguke:::add_lyric("a different lyric")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-39-2.png)<!-- -->
-
-``` r
-
-a_cool_song22 <- tibble::tribble(~lyric, ~chord_name,
-                       "This is my cool lyric", "CM",
-                       "This is another", "DM",
-                       "hi", "GM",
-                       "hola hola!", "E7M")
-
-
-gguke:::lyric_chord_df_to_chart(a_cool_song22)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-39-3.png)<!-- -->
