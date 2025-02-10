@@ -19,6 +19,8 @@
   - [then we need a **fret board**.](#then-we-need-a-fret-board)
     - [make it once](#make-it-once)
     - [looks good; make it a function](#looks-good-make-it-a-function)
+- [maybe a position that wraps by
+  row](#maybe-a-position-that-wraps-by-row)
   - [from **lyric-chord data frame to
     chart**…](#from-lyric-chord-data-frame-to-chart)
     - [use a lyrics-chord data frame.](#use-a-lyrics-chord-data-frame)
@@ -34,6 +36,7 @@
 
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+
 <!-- badges: end -->
 
 {gguke} will provide tools for visualizing ukelele chords with lyrics.
@@ -96,6 +99,19 @@ Dm <-
 23--
 ----"
 
+EM <- 
+"pppp
+1---
+---2
+----
+-4--"
+
+FM <- 
+"pppp
+--1-
+2---
+----"
+
 # re-writen to save space
 GM <- "pppp\n----\n-1-2\n--3-"
 E7M <- "pppp\n1---\n-2-3\n----"
@@ -105,7 +121,7 @@ Dbm <- "pppp\n12--\n----\n----"
 `F#m` <- "pppp\n-1--\n2-3-\n----"
 D7M <- "pppp\n----\n1111\n---2"
 A7M <- "pppp\n-1--\n----\n----"
-Am <- "pppp\n1---\n----\n----"
+Am <- "pppp\n----\n2---\n----"
 Am7 <- "pppp\n----\n----\n----"
 Bm <- "pppp\n----\n-111\n----\n3---"
 Em <- "pppp\n----\n---1\n----\n-3--"
@@ -113,11 +129,11 @@ Em <- "pppp\n----\n---1\n----\n-3--"
 
 ``` r
 chord_library <- tibble(chord_name = 
-c("CM", "GM", "Dm", "E7M", "AM","DM", "Dbm", "F#m", "D7M", "A7M", "Am", "Am7", "Bm", "Em"),
+c("CM", "GM", "Dm", "E7M", "AM","DM", "Dbm", "F#m", "D7M", "A7M", "Am", "Am7", "Bm", "Em", "EM", "FM"),
 fingering_str = 
-c(CM, GM, Dm, E7M, AM, DM, Dbm, `F#m`, D7M, A7M, Am, Am7, Bm, Em))
+c(CM, GM, Dm, E7M, AM, DM, Dbm, `F#m`, D7M, A7M, Am, Am7, Bm, Em, EM, FM))
 chord_library
-#> # A tibble: 14 × 2
+#> # A tibble: 16 × 2
 #>    chord_name fingering_str                 
 #>    <chr>      <chr>                         
 #>  1 CM         "pppp\n----\n----\n---3"      
@@ -130,10 +146,12 @@ chord_library
 #>  8 F#m        "pppp\n-1--\n2-3-\n----"      
 #>  9 D7M        "pppp\n----\n1111\n---2"      
 #> 10 A7M        "pppp\n-1--\n----\n----"      
-#> 11 Am         "pppp\n1---\n----\n----"      
+#> 11 Am         "pppp\n----\n2---\n----"      
 #> 12 Am7        "pppp\n----\n----\n----"      
 #> 13 Bm         "pppp\n----\n-111\n----\n3---"
 #> 14 Em         "pppp\n----\n---1\n----\n-3--"
+#> 15 EM         "pppp\n1---\n---2\n----\n-4--"
+#> 16 FM         "pppp\n--1-\n2---\n----"
 ```
 
 ### Translate finger_str to fret, finger, string info
@@ -146,9 +164,6 @@ mind - some string manipulation, but might move to read.delim…
 
 CM |> stringr::str_split("") %>%  .[[1]] %>% .[1:4]
 #> [1] "p" "p" "p" "p"
-```
-
-``` r
 
 chart <- CM |> stringr::str_split("") %>%  .[[1]] %>% .[5:length(.)] 
 num_frets <- length(chart)/5
@@ -199,9 +214,6 @@ list(play_tf = play_TF,
 # play or not for each string
 parse_chord()[[1]]
 #> [1] "p" "p" "p" "p"
-```
-
-``` r
 
 # dataframe with finger placement info
 parse_chord()[[2]]
@@ -241,7 +253,7 @@ chord_library %>%
 chord_library_parsed <- chord_library %>% chord_library_parse_chords() 
 
 chord_library_parsed
-#> # A tibble: 33 × 6
+#> # A tibble: 38 × 6
 #>    chord_name fingering_str            phrase_chord_id finger  fret string
 #>    <chr>      <chr>                              <int>  <dbl> <int>  <int>
 #>  1 CM         "pppp\n----\n----\n---3"               1      3     3      4
@@ -254,18 +266,12 @@ chord_library_parsed
 #>  8 E7M        "pppp\n1---\n-2-3\n----"               4      1     1      1
 #>  9 E7M        "pppp\n1---\n-2-3\n----"               4      2     2      2
 #> 10 E7M        "pppp\n1---\n-2-3\n----"               4      3     2      4
-#> # ℹ 23 more rows
+#> # ℹ 28 more rows
 ```
 
 ``` r
 usethis::use_pipe()
-#> ✔ Setting active project to '/Users/evangelinereynolds/Google
-#> Drive/r_packages/gguke'
-```
-
-``` r
 knitrExtra:::chunk_to_r("parse_chord")
-#> It seems you are currently knitting a Rmd/Qmd file. The parsing of the file will be done in a new R session.
 ```
 
 ## now we’ll place **fingers positions** w/ point and text
@@ -289,7 +295,6 @@ data.frame(lyric = c("hello", "goodbye"),
             )  + 
   scale_y_reverse() + 
   coord_equal(xlim = c(1,4), ylim = c(4, 1))
-#> Joining with `by = join_by(chord_name)`
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
@@ -327,7 +332,8 @@ StatUkefingers <- ggplot2::ggproto(
   default_aes = ggplot2::aes(label = after_stat(finger), 
                              # color = after_stat(finger),
                              fill  = after_stat(finger),
-                             y = after_stat(fret+.5)))
+                             y = after_stat(fret+.5),
+                             wrap = after_stat(row)))
 ```
 
 ### step 3. write geom_chord
@@ -372,21 +378,33 @@ tribble(~lyric, ~chord_name,
   facet_wrap(~fct_inorder(lyric)) + 
   scale_y_reverse() + 
   coord_equal(xlim = c(1,4), ylim = c(4, 1))
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+``` r
+
+
+
+tribble(~lyric, ~chord_name,
+"It goes like this, the",   "CM",   
+"fourth the",   "FM",
+"fifth, the",   "GM",
+"minor fall and the ",  "Am",
+"major lift", "FM" ) %>% 
+  ggplot() + 
+  scale_color_viridis_c() +
+  aes(chord = chord_name) + 
+  geom_chord(fill = "white") +
+  geom_chord(alpha = .6, color = "black") + 
+  geom_chord_text(color = "black", size = 10) + 
+  facet_wrap(~fct_inorder(lyric)) + 
+  scale_y_reverse() + 
+  coord_equal(xlim = c(1,4), ylim = c(4, 1))  + 
+  scale_x_continuous(expand = expansion(.2)) 
+```
+
+![](README_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->
 
 ## then we need a **fret board**.
 
@@ -405,12 +423,6 @@ ggplot() +
   # theme_void() + 
   coord_equal() +
   scale_fill_viridis_c(limits = c(1,4), guide = F)
-#> Warning: The `guide` argument in `scale_*()` cannot be `FALSE`. This was deprecated in
-#> ggplot2 3.3.4.
-#> ℹ Please use "none" instead.
-#> This warning is displayed once every 8 hours.
-#> Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
-#> generated.
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
@@ -418,32 +430,176 @@ ggplot() +
 ### looks good; make it a function
 
 ``` r
-stamp_fretboard <- function(){
+strings <- data.frame(x = 1:4, y = 0, 
+           xend = 1:4, yend = 5, lineend = "round")
+
+frets <- data.frame(y = 0:4, 
+           yend = 0:4, x = 1, xend = 4, lineend = "butt")
+
+fretboard <- bind_rows(strings, frets)
+
+fretboard %>% 
+  ggplot() + 
+  aes(x = x, y = y, yend = yend, xend = xend) + 
+  geom_segment() + 
+  scale_y_reverse()
+```
+
+![](README_files/figure-gfm/uke_fretboard-1.png)<!-- -->
+
+``` r
+
+compute_fretboard <- function(data, scales){
   
-  list(
-    annotate(geom = "segment", x = 1:4, y = 0, 
-           xend = 1:4, yend = 5, linewidth = 3,
-  lineend = "round"),
-  annotate(geom = "segment", y = 0:4, 
-           yend = 0:4, x = 1, xend = 4, linewidth = 3,
-  lineend = "butt"),
-  scale_y_reverse(),
-  scale_x_continuous(expand = expansion(.2)),
-  theme_void(),
-  coord_equal(),
-  scale_fill_viridis_c(limits = c(1,4), guide = F) 
-  )
+  data %>% 
+    mutate(phrase = row_number()) %>% 
+    crossing(fretboard)
   
 }
 
-gguke <- function(data){ 
-  
- ggplot(data = data) + stamp_fretboard()
-  
+cars |> slice(1:3) |>
+  compute_fretboard()
+#> # A tibble: 27 × 8
+#>    speed  dist phrase     x     y  xend  yend lineend
+#>    <dbl> <dbl>  <int> <dbl> <dbl> <dbl> <dbl> <chr>  
+#>  1     4     2      1     1     0     1     5 round  
+#>  2     4     2      1     1     0     4     0 butt   
+#>  3     4     2      1     1     1     4     1 butt   
+#>  4     4     2      1     1     2     4     2 butt   
+#>  5     4     2      1     1     3     4     3 butt   
+#>  6     4     2      1     1     4     4     4 butt   
+#>  7     4     2      1     2     0     2     5 round  
+#>  8     4     2      1     3     0     3     5 round  
+#>  9     4     2      1     4     0     4     5 round  
+#> 10     4    10      2     1     0     1     5 round  
+#> # ℹ 17 more rows
+
+
+StatFretboard <- ggproto("StatFretboard", Stat, 
+                         compute_panel = compute_fretboard,
+                         default_aes = aes(wrap = after_stat(phrase),
+                                           color = after_stat(phrase))
+                         )
+
+compute_layer_wrap <- function(data, params, panel) {
+    
+    wrap <- as.numeric(as.factor(data$wrap))
+    
+    wrapping_x <- ((wrap - 1) %% 3)
+    wrapping_y <- ((wrap - 1) %/% 3)
+    
+    range_x <- 4
+    range_y <- 6
+    # if(range_x == 0){range_x <- 1}
+    # if(range_y == 0){range_y <- 1}
+    
+    ggplot2::transform_position(
+      df = data,
+      trans_x = function(x) {x/(range_x) + wrapping_x}, 
+      trans_y = function(y) {y/(range_y) + wrapping_y}
+    )
+  }
+
+PositionWrap <- ggproto(`_class` = 'PositionWrap', `_inherit` = Position,
+                        required_aes = c('x', 'y', 'wrap'),
+                        compute_layer = compute_layer_wrap)
+
+
+position_wrap <- function() {
+  ggproto(NULL, PositionWrap)
 }
+
+
+ggplot(cars |> slice(1:4)) + 
+  geom_segment(stat = StatFretboard, position = "wrap") + 
+  coord_trans(y = "reverse")
+```
+
+![](README_files/figure-gfm/uke_fretboard-2.png)<!-- -->
+
+``` r
+  
+layer_data()
+#>     colour wrap PANEL group phrase    x         y xend      yend lineend
+#> 1  #132B43    1     1    -1      1 0.25 0.0000000 0.25 0.8333333   round
+#> 2  #132B43    1     1    -1      1 0.25 0.0000000 1.00 0.0000000    butt
+#> 3  #132B43    1     1    -1      1 0.25 0.1666667 1.00 0.1666667    butt
+#> 4  #132B43    1     1    -1      1 0.25 0.3333333 1.00 0.3333333    butt
+#> 5  #132B43    1     1    -1      1 0.25 0.5000000 1.00 0.5000000    butt
+#> 6  #132B43    1     1    -1      1 0.25 0.6666667 1.00 0.6666667    butt
+#> 7  #132B43    1     1    -1      1 0.50 0.0000000 0.50 0.8333333   round
+#> 8  #132B43    1     1    -1      1 0.75 0.0000000 0.75 0.8333333   round
+#> 9  #132B43    1     1    -1      1 1.00 0.0000000 1.00 0.8333333   round
+#> 10 #28547A    2     1    -1      2 1.25 0.0000000 1.25 0.8333333   round
+#> 11 #28547A    2     1    -1      2 1.25 0.0000000 2.00 0.0000000    butt
+#> 12 #28547A    2     1    -1      2 1.25 0.1666667 2.00 0.1666667    butt
+#> 13 #28547A    2     1    -1      2 1.25 0.3333333 2.00 0.3333333    butt
+#> 14 #28547A    2     1    -1      2 1.25 0.5000000 2.00 0.5000000    butt
+#> 15 #28547A    2     1    -1      2 1.25 0.6666667 2.00 0.6666667    butt
+#> 16 #28547A    2     1    -1      2 1.50 0.0000000 1.50 0.8333333   round
+#> 17 #28547A    2     1    -1      2 1.75 0.0000000 1.75 0.8333333   round
+#> 18 #28547A    2     1    -1      2 2.00 0.0000000 2.00 0.8333333   round
+#> 19 #3E81B7    3     1    -1      3 2.25 0.0000000 2.25 0.8333333   round
+#> 20 #3E81B7    3     1    -1      3 2.25 0.0000000 3.00 0.0000000    butt
+#> 21 #3E81B7    3     1    -1      3 2.25 0.1666667 3.00 0.1666667    butt
+#> 22 #3E81B7    3     1    -1      3 2.25 0.3333333 3.00 0.3333333    butt
+#> 23 #3E81B7    3     1    -1      3 2.25 0.5000000 3.00 0.5000000    butt
+#> 24 #3E81B7    3     1    -1      3 2.25 0.6666667 3.00 0.6666667    butt
+#> 25 #3E81B7    3     1    -1      3 2.50 0.0000000 2.50 0.8333333   round
+#> 26 #3E81B7    3     1    -1      3 2.75 0.0000000 2.75 0.8333333   round
+#> 27 #3E81B7    3     1    -1      3 3.00 0.0000000 3.00 0.8333333   round
+#> 28 #56B1F7    4     1    -1      4 0.25 1.0000000 0.25 1.8333333   round
+#> 29 #56B1F7    4     1    -1      4 0.25 1.0000000 1.00 1.0000000    butt
+#> 30 #56B1F7    4     1    -1      4 0.25 1.1666667 1.00 1.1666667    butt
+#> 31 #56B1F7    4     1    -1      4 0.25 1.3333333 1.00 1.3333333    butt
+#> 32 #56B1F7    4     1    -1      4 0.25 1.5000000 1.00 1.5000000    butt
+#> 33 #56B1F7    4     1    -1      4 0.25 1.6666667 1.00 1.6666667    butt
+#> 34 #56B1F7    4     1    -1      4 0.50 1.0000000 0.50 1.8333333   round
+#> 35 #56B1F7    4     1    -1      4 0.75 1.0000000 0.75 1.8333333   round
+#> 36 #56B1F7    4     1    -1      4 1.00 1.0000000 1.00 1.8333333   round
+#>    linewidth linetype alpha
+#> 1        0.5        1    NA
+#> 2        0.5        1    NA
+#> 3        0.5        1    NA
+#> 4        0.5        1    NA
+#> 5        0.5        1    NA
+#> 6        0.5        1    NA
+#> 7        0.5        1    NA
+#> 8        0.5        1    NA
+#> 9        0.5        1    NA
+#> 10       0.5        1    NA
+#> 11       0.5        1    NA
+#> 12       0.5        1    NA
+#> 13       0.5        1    NA
+#> 14       0.5        1    NA
+#> 15       0.5        1    NA
+#> 16       0.5        1    NA
+#> 17       0.5        1    NA
+#> 18       0.5        1    NA
+#> 19       0.5        1    NA
+#> 20       0.5        1    NA
+#> 21       0.5        1    NA
+#> 22       0.5        1    NA
+#> 23       0.5        1    NA
+#> 24       0.5        1    NA
+#> 25       0.5        1    NA
+#> 26       0.5        1    NA
+#> 27       0.5        1    NA
+#> 28       0.5        1    NA
+#> 29       0.5        1    NA
+#> 30       0.5        1    NA
+#> 31       0.5        1    NA
+#> 32       0.5        1    NA
+#> 33       0.5        1    NA
+#> 34       0.5        1    NA
+#> 35       0.5        1    NA
+#> 36       0.5        1    NA
+
+geom_fretboard <- function(...){geom_segment(stat = StatFretboard, position = "wrap", ...)}
 ```
 
 ``` r
+# old stuff
 tribble(~lyric, ~chord_name,
 "Mary had a little lamb,",  "CM",   
 "little lamb,", "GM",
@@ -456,28 +612,76 @@ tribble(~lyric, ~chord_name,
   geom_chord(alpha = .6, color = "black") + 
   geom_chord_text(color = "black", size = 10) + 
   facet_wrap(~fct_inorder(lyric))
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
-#> Joining with `by = join_by(chord)`
 ```
-
-![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 🤔 maybe gguke() would be better 🤔 maybe a coord_uke could be a
 long-term goal.
 
+# maybe a position that wraps by row
+
+``` r
+tribble(~lyric, ~chord_name,
+"It goes like this,",   "CM",   
+"the fourth,",  "FM",
+"the fifth",    "GM",
+"the minor fall and the",   "Am",
+"major", "FM",
+"lift", "GM") %>% 
+  mutate(row = row_number()) %>% 
+  ggplot() + 
+  aes(chord = chord_name) + 
+  geom_vline(xintercept = c(0,6,12,18)/6, color = "lightgrey") +
+  geom_fretboard() +
+  geom_chord(fill = "white", position = "wrap") +
+  coord_trans(y = "reverse") +
+  geom_chord(alpha = .6, color = "black", position = "wrap") + 
+  geom_chord_text(color = "black", size = 10, position = "wrap") + 
+  geom_label(aes(label = lyric, wrap = row, x = 1, y = 0), vjust = 0, hjust = 0, 
+            position = "wrap", fill = "transparent", linewidth = 0)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
+``` r
+tibble::tribble(~lyric, ~chord_name,
+"You're a", NA,                          
+"mean one,     Mister", "Am",
+"Grinch ", "Dm",
+NA, "G",
+"You", "CM",
+"really", "Am",
+"are a ", "DM",
+"heel",   "EM",
+"You're as ", NA,
+"cuddly as", "Am",
+"cactus, You're as", "Dm",
+"charming as an", "GM",
+"eel Mister", "CM",
+"Gr - i -", "FM",
+"inch", "EM",
+"You're a bad banana with a", NA,
+"greasy black", "Am",
+"peel", "Dm",
+NA, "Am",
+NA, "Dm",
+NA, "Am",
+NA, "Dm",
+NA, "EM")  %>% 
+  ggplot() + 
+  scale_color_viridis_c() +
+  aes(chord = chord_name) + 
+  stamp_fretboard() +
+  geom_chord(fill = "white") +
+  geom_chord(alpha = .6, color = "black") + 
+  geom_chord_text(color = "black", size = 10) + 
+  facet_wrap(~fct_inorder(lyric)) + 
+  scale_y_reverse() + 
+  coord_equal(xlim = c(1,4), ylim = c(4, 1)) + 
+  theme_void(base_size = 15)
+```
+
 ``` r
 knitrExtra:::chunk_to_r("uke_fretboard")
-#> It seems you are currently knitting a Rmd/Qmd file. The parsing of the file will be done in a new R session.
 ```
 
 ## from **lyric-chord data frame to chart**…
@@ -515,11 +719,6 @@ lyric_chord_df <- tibble::tribble(~lyric, ~chord_name,
 
 ``` r
 song <- readLines("Untitled.txt")
-#> Warning in readLines("Untitled.txt"): incomplete final line found on
-#> 'Untitled.txt'
-```
-
-``` r
 song_line <- sort(rep(1:(length(song)/2),2))
 characters <- song %>% stringr::str_split("") 
 element <- rep(c("chord", "lyric"), length(song)/2)
@@ -557,8 +756,6 @@ tibble(song_line, characters, element)  %>%
   summarize(lyric = paste(lyric, collapse = ""),
             chord_name = paste(chord, collapse = "") %>% str_trim()) ->
 snow_from_txt
-#> Warning: `cols` is now required when using `unnest()`.
-#> ℹ Please use `cols = c(chord, lyric)`.
 ```
 
 ``` r
@@ -613,9 +810,6 @@ tibble(song_line, characters, element)  %>%
 
 ``` r
 gershwin_ly_ch_df <- txt_chord_lyrics_to_df("gershwin.txt")
-#> Warning in readLines(path): incomplete final line found on 'gershwin.txt'
-#> Warning: `cols` is now required when using `unnest()`.
-#> ℹ Please use `cols = c(chord, lyric)`.
 ```
 
 Test…
@@ -624,16 +818,16 @@ Test…
 gershwin_ly_ch_df[1:4,] %>% 
   rename(chord = chord_name) %>% 
   compute_group_uke_fingering(chord_library = chord_library_parsed)
-#> Joining with `by = join_by(chord)`
-#> # A tibble: 6 × 10
+#> # A tibble: 7 × 10
 #>   id_chord_phrase lyric   chord   row fingering_str phrase_chord_id finger  fret
 #>             <int> <chr>   <chr> <int> <chr>                   <int>  <dbl> <int>
 #> 1               0 "Its v… D7        1  <NA>                      NA     NA    NA
-#> 2               1 "Our l… FM        2  <NA>                      NA     NA    NA
-#> 3               2 " here… Dm        3 "pppp\n--1-\…               3      1     1
-#> 4               2 " here… Dm        3 "pppp\n--1-\…               3      2     2
-#> 5               2 " here… Dm        3 "pppp\n--1-\…               3      3     2
-#> 6               3 " stay" Am7       4  <NA>                      NA     NA    NA
+#> 2               1 "Our l… FM        2 "pppp\n--1-\…              16      1     1
+#> 3               1 "Our l… FM        2 "pppp\n--1-\…              16      2     2
+#> 4               2 " here… Dm        3 "pppp\n--1-\…               3      1     1
+#> 5               2 " here… Dm        3 "pppp\n--1-\…               3      2     2
+#> 6               2 " here… Dm        3 "pppp\n--1-\…               3      3     2
+#> 7               3 " stay" Am7       4  <NA>                      NA     NA    NA
 #> # ℹ 2 more variables: string <int>, x <int>
 ```
 

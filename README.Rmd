@@ -9,7 +9,9 @@ output:
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  warning = F,
+  message = F
 )
 
 library(tidyverse)
@@ -19,22 +21,22 @@ library(tidyverse)
 # gguke is under construction! 🚧 Feedback welcome!
 
 <!-- badges: start -->
+
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+
 <!-- badges: end -->
 
-{gguke} will provide tools for visualizing ukelele chords with lyrics. This is for people that aren't so good at ukelele; they may not really know the chords yet.  It's a chord-first approach to song charts, which might have only chord names or small finger position.  
+{gguke} will provide tools for visualizing ukelele chords with lyrics. This is for people that aren't so good at ukelele; they may not really know the chords yet. It's a chord-first approach to song charts, which might have only chord names or small finger position.
 
-And because we make it with ggplot2, we can do a lot with customization.  For example, fingers get assigned a color using the viridis palette. 
+And because we make it with ggplot2, we can do a lot with customization. For example, fingers get assigned a color using the viridis palette.
 
-This is currently a [{knitrExtra}]() project; we're writing in a kind-of stream of consciousness way, bundling up useful code into functions as we go in our README.rmd narrative, and then sending written-up functions to our R folder with knitr/rmd magic. Our commitment to keeping things as they are is low at this point, but it is a real package.  Lifecycle is *early* experimental. See also [{litr}](). 
+This is currently a [{knitrExtra}]() project; we're writing in a kind-of stream of consciousness way, bundling up useful code into functions as we go in our README.rmd narrative, and then sending written-up functions to our R folder with knitr/rmd magic. Our commitment to keeping things as they are is low at this point, but it is a real package. Lifecycle is *early* experimental. See also [{litr}]().
 
 Beyond the descriptions of our work, we interject comments on our hesitations 🤔 and areas that need some work 🚧, for your consideration marked with emoji.
 
 ## **Chord info input**
 
-First, something I'm very excited about, a new-chord ingestion... - it's just text.  Here's a C major fingering, where first line is whether string is played or not.  There are four strings across, the number indicates where on the fret board the specific finger should be placed:
-
-
+First, something I'm very excited about, a new-chord ingestion... - it's just text. Here's a C major fingering, where first line is whether string is played or not. There are four strings across, the number indicates where on the fret board the specific finger should be placed:
 
 ```{r}
 CM <- 
@@ -57,7 +59,6 @@ chord_library <- data.frame(chord_name =
 chord_library
 ```
 
-
 ## Build up slightly larger **chord library**
 
 ```{r}
@@ -66,6 +67,19 @@ Dm <-
 "pppp
 --1-
 23--
+----"
+
+EM <- 
+"pppp
+1---
+---2
+----
+-4--"
+
+FM <- 
+"pppp
+--1-
+2---
 ----"
 
 # re-writen to save space
@@ -77,32 +91,28 @@ Dbm <- "pppp\n12--\n----\n----"
 `F#m` <- "pppp\n-1--\n2-3-\n----"
 D7M <- "pppp\n----\n1111\n---2"
 A7M <- "pppp\n-1--\n----\n----"
-Am <- "pppp\n1---\n----\n----"
+Am <- "pppp\n----\n2---\n----"
 Am7 <- "pppp\n----\n----\n----"
 Bm <- "pppp\n----\n-111\n----\n3---"
 Em <- "pppp\n----\n---1\n----\n-3--"
-```
 
+
+```
 
 ```{r}
 chord_library <- tibble(chord_name = 
-c("CM", "GM", "Dm", "E7M", "AM","DM", "Dbm", "F#m", "D7M", "A7M", "Am", "Am7", "Bm", "Em"),
+c("CM", "GM", "Dm", "E7M", "AM","DM", "Dbm", "F#m", "D7M", "A7M", "Am", "Am7", "Bm", "Em", "EM", "FM"),
 fingering_str = 
-c(CM, GM, Dm, E7M, AM, DM, Dbm, `F#m`, D7M, A7M, Am, Am7, Bm, Em))
+c(CM, GM, Dm, E7M, AM, DM, Dbm, `F#m`, D7M, A7M, Am, Am7, Bm, Em, EM, FM))
 chord_library
 
 
 
 ```
 
-
-
-
-
 ### Translate finger_str to fret, finger, string info
 
 Then translate that to data frame that records string, fret, and finger that will play each note. I'm just doing the first thing that came to mind - some string manipulation, but might move to read.delim...
-
 
 ```{r}
 
@@ -126,7 +136,6 @@ data.frame(finger = chart) %>%
 🤔 maybe read.delim(delim = ""), would work better and feel more grokable that this string split business! :-)
 
 ### Make it a function...
-
 
 ```{r parse_chord}
 parse_chord <- function(chord = CM){
@@ -191,27 +200,17 @@ chord_library %>%
 }
 
 ```
+
 ```{r}
 chord_library_parsed <- chord_library %>% chord_library_parse_chords() 
 
 chord_library_parsed
 ```
 
-
-
 ```{r, eval = T}
 usethis::use_pipe()
 knitrExtra:::chunk_to_r("parse_chord")
 ```
-
-
-
-
-
-
-
-
-
 
 ## now we'll place **fingers positions** w/ point and text
 
@@ -236,10 +235,6 @@ data.frame(lyric = c("hello", "goodbye"),
   coord_equal(xlim = c(1,4), ylim = c(4, 1))
 ```
 
-
-
-
-
 ## Part I.b
 
 Make it more ggplot2 grammatical
@@ -262,9 +257,6 @@ compute_group_uke_fingering <- function(data, scales, chord_library = chord_libr
 }
 ```
 
-
-
-
 ### step 2. pass to ggproto
 
 ```{r}
@@ -276,7 +268,8 @@ StatUkefingers <- ggplot2::ggproto(
   default_aes = ggplot2::aes(label = after_stat(finger), 
                              # color = after_stat(finger),
                              fill  = after_stat(finger),
-                             y = after_stat(fret+.5)))
+                             y = after_stat(fret+.5),
+                             wrap = after_stat(row)))
 ```
 
 ### step 3. write geom_chord
@@ -306,10 +299,6 @@ geom_chord_text <- function(...){
 }
 ```
 
-
-
-
-
 ```{r, fig.width=10, fig.height=10, warning=F}
 tribble(~lyric, ~chord_name,
 "Mary had a little lamb,",	"CM",	
@@ -325,10 +314,28 @@ tribble(~lyric, ~chord_name,
   facet_wrap(~fct_inorder(lyric)) + 
   scale_y_reverse() + 
   coord_equal(xlim = c(1,4), ylim = c(4, 1))
+
+
+
+tribble(~lyric, ~chord_name,
+"It goes like this, the",	"CM",	
+"fourth the",	"FM",
+"fifth, the",	"GM",
+"minor fall and the ",	"Am",
+"major lift", "FM" ) %>% 
+  ggplot() + 
+  scale_color_viridis_c() +
+  aes(chord = chord_name) + 
+  geom_chord(fill = "white") +
+  geom_chord(alpha = .6, color = "black") + 
+  geom_chord_text(color = "black", size = 10) + 
+  facet_wrap(~fct_inorder(lyric)) + 
+  scale_y_reverse() + 
+  coord_equal(xlim = c(1,4), ylim = c(4, 1))  + 
+  scale_x_continuous(expand = expansion(.2)) 
 ```
 
-
-## then we need a **fret board**. 
+## then we need a **fret board**.
 
 ### make it once
 
@@ -347,38 +354,81 @@ ggplot() +
   scale_fill_viridis_c(limits = c(1,4), guide = F)
 ```
 
-
-
-
 ### looks good; make it a function
 
 ```{r uke_fretboard}
-stamp_fretboard <- function(){
+strings <- data.frame(x = 1:4, y = 0, 
+           xend = 1:4, yend = 5, lineend = "round")
+
+frets <- data.frame(y = 0:4, 
+           yend = 0:4, x = 1, xend = 4, lineend = "butt")
+
+fretboard <- bind_rows(strings, frets)
+
+fretboard %>% 
+  ggplot() + 
+  aes(x = x, y = y, yend = yend, xend = xend) + 
+  geom_segment() + 
+  scale_y_reverse()
+
+compute_fretboard <- function(data, scales){
   
-  list(
-    annotate(geom = "segment", x = 1:4, y = 0, 
-           xend = 1:4, yend = 5, linewidth = 3,
-  lineend = "round"),
-  annotate(geom = "segment", y = 0:4, 
-           yend = 0:4, x = 1, xend = 4, linewidth = 3,
-  lineend = "butt"),
-  scale_y_reverse(),
-  scale_x_continuous(expand = expansion(.2)),
-  theme_void(),
-  coord_equal(),
-  scale_fill_viridis_c(limits = c(1,4), guide = F) 
-  )
+  data %>% 
+    mutate(phrase = row_number()) %>% 
+    crossing(fretboard)
   
 }
 
-gguke <- function(data){ 
-  
- ggplot(data = data) + stamp_fretboard()
-  
+cars |> slice(1:3) |>
+  compute_fretboard()
+
+
+StatFretboard <- ggproto("StatFretboard", Stat, 
+                         compute_panel = compute_fretboard,
+                         default_aes = aes(wrap = after_stat(phrase),
+                                           color = after_stat(phrase))
+                         )
+
+compute_layer_wrap <- function(data, params, panel) {
+    
+    wrap <- as.numeric(as.factor(data$wrap))
+    
+    wrapping_x <- ((wrap - 1) %% 3)
+    wrapping_y <- ((wrap - 1) %/% 3)
+    
+    range_x <- 4
+    range_y <- 6
+    # if(range_x == 0){range_x <- 1}
+    # if(range_y == 0){range_y <- 1}
+    
+    ggplot2::transform_position(
+      df = data,
+      trans_x = function(x) {x/(range_x) + wrapping_x}, 
+      trans_y = function(y) {y/(range_y) + wrapping_y}
+    )
+  }
+
+PositionWrap <- ggproto(`_class` = 'PositionWrap', `_inherit` = Position,
+                        required_aes = c('x', 'y', 'wrap'),
+                        compute_layer = compute_layer_wrap)
+
+
+position_wrap <- function() {
+  ggproto(NULL, PositionWrap)
 }
+
+
+ggplot(cars |> slice(1:4)) + 
+  geom_segment(stat = StatFretboard, position = "wrap") + 
+  coord_trans(y = "reverse")
+  
+layer_data()
+
+geom_fretboard <- function(...){geom_segment(stat = StatFretboard, position = "wrap", ...)}
 ```
 
-```{r}
+```{r, eval = F}
+# old stuff
 tribble(~lyric, ~chord_name,
 "Mary had a little lamb,",	"CM",	
 "little lamb,",	"GM",
@@ -394,17 +444,79 @@ tribble(~lyric, ~chord_name,
 
 ```
 
-🤔 maybe gguke() would be better
-🤔 maybe a coord_uke could be a long-term goal.
+🤔 maybe gguke() would be better 🤔 maybe a coord_uke could be a long-term goal.
+
+
+# maybe a position that wraps by row
+
+```{r}
+tribble(~lyric, ~chord_name,
+"It goes like this,",	"CM",	
+"the fourth,",	"FM",
+"the fifth",	"GM",
+"the minor fall and the",	"Am",
+"major", "FM",
+"lift", "GM") %>% 
+  mutate(row = row_number()) %>% 
+  ggplot() + 
+  aes(chord = chord_name) + 
+  geom_vline(xintercept = c(0,6,12,18)/6, color = "lightgrey") +
+  geom_fretboard() +
+  geom_chord(fill = "white", position = "wrap") +
+  coord_trans(y = "reverse") +
+  geom_chord(alpha = .6, color = "black", position = "wrap") + 
+  geom_chord_text(color = "black", size = 10, position = "wrap") + 
+  geom_label(aes(label = lyric, wrap = row, x = 1, y = 0), vjust = 0, hjust = 0, 
+            position = "wrap", fill = "transparent", linewidth = 0)
+
+```
+
+
+```{r fig.width=20, fig.height=20, eval = F}
+tibble::tribble(~lyric, ~chord_name,
+"You're a", NA,                          
+"mean one,     Mister", "Am",
+"Grinch ", "Dm",
+NA, "G",
+"You", "CM",
+"really", "Am",
+"are a ", "DM",
+"heel",   "EM",
+"You're as ", NA,
+"cuddly as", "Am",
+"cactus, You're as", "Dm",
+"charming as an", "GM",
+"eel Mister", "CM",
+"Gr - i -", "FM",
+"inch", "EM",
+"You're a bad banana with a", NA,
+"greasy black", "Am",
+"peel", "Dm",
+NA, "Am",
+NA, "Dm",
+NA, "Am",
+NA, "Dm",
+NA, "EM")  %>% 
+  ggplot() + 
+  scale_color_viridis_c() +
+  aes(chord = chord_name) + 
+  stamp_fretboard() +
+  geom_chord(fill = "white") +
+  geom_chord(alpha = .6, color = "black") + 
+  geom_chord_text(color = "black", size = 10) + 
+  facet_wrap(~fct_inorder(lyric)) + 
+  scale_y_reverse() + 
+  coord_equal(xlim = c(1,4), ylim = c(4, 1)) + 
+  theme_void(base_size = 15)
+
+
+```
 
 ```{r, eval = T}
 knitrExtra:::chunk_to_r("uke_fretboard")
 ```
 
-
-
 ## from **lyric-chord data frame to chart**...
-
 
 ### use a lyrics-chord data frame.
 
@@ -434,7 +546,6 @@ lyric_chord_df <- tibble::tribble(~lyric, ~chord_name,
 " heart", "DM",
 "Always", "GM")
 ```
-
 
 ## from text to chord-lyric data frame (w/ let it snow)
 
@@ -478,7 +589,6 @@ tibble(song_line, characters, element)  %>%
             chord_name = paste(chord, collapse = "") %>% str_trim()) ->
 snow_from_txt
 ```
-
 
 ```{r}
 
@@ -528,7 +638,7 @@ tibble(song_line, characters, element)  %>%
 
 ## gershwin
 
-- There may have been a problem with phrases that don't start with a new chord.  I worked on it in the text file. 
+-   There may have been a problem with phrases that don't start with a new chord. I worked on it in the text file.
 
 ```{r, }
 gershwin_ly_ch_df <- txt_chord_lyrics_to_df("gershwin.txt")
@@ -542,19 +652,18 @@ gershwin_ly_ch_df[1:4,] %>%
   compute_group_uke_fingering(chord_library = chord_library_parsed)
 ```
 
-
 ```{r}
 knitr::knit_exit()
 
 ```
 
-# Part II. Packaging and documentation  🚧 ✅ 
+# Part II. Packaging and documentation 🚧 ✅
 
 ## Phase 1. Minimal working package
 
-### Created files for **package architecture** with `devtools::create(".")` ✅ 
+### Created files for **package architecture** with `devtools::create(".")` ✅
 
-### Moved **functions R folder**? ✅  
+### Moved **functions R folder**? ✅
 
 ```{r}
 knitr::knit_code$get() |> names()
@@ -570,9 +679,9 @@ Use new {readme2pkg} function to do this from readme if you haven't already
 
 Use a roxygen skeleton for auto documentation and making sure proposed functions are *exported*.
 
-We haven't done this which means none of the functions are exported.  To access them we need to use 'gguke:::' syntax.
+We haven't done this which means none of the functions are exported. To access them we need to use 'gguke:::' syntax.
 
-### Managed **dependencies** ? ✅ 
+### Managed **dependencies** ? ✅
 
 Package dependencies managed, i.e. `depend::function()` in proposed functions and declared in the DESCRIPTION
 
@@ -581,22 +690,19 @@ usethis::use_package("ggplot2")
 usethis::use_package("dplyr")
 ```
 
-
-
-### Chosen a package **license**? 🚧 
-
+### Chosen a package **license**? 🚧
 
 ```{r, eval=F}
 usethis::use_mit_license()
 ```
 
-### Run `devtools::check()` and addressed errors? 🚧 
+### Run `devtools::check()` and addressed errors? 🚧
 
 ```{r, results='hide', error=T, eval = F}
 devtools::check(pkg = ".")
 ```
 
-### Build package 🚧 
+### Build package 🚧
 
 ```{r, eval = F}
 devtools::build()
@@ -604,9 +710,9 @@ devtools::build()
 
 You need to do this before Part 0 in this document will work.
 
-### Make aspirational part of readme real. 🚧 
+### Make aspirational part of readme real. 🚧
 
-At this point, you could change eval chunk options to TRUE. You can remove  the 🦄 emoji and perhaps replace it with construction site if you are still uncertain of the API, and want to highlight that it is subject to change. 
+At this point, you could change eval chunk options to TRUE. You can remove the 🦄 emoji and perhaps replace it with construction site if you are still uncertain of the API, and want to highlight that it is subject to change.
 
 ### Add lifecycle badge (experimental)
 
@@ -614,18 +720,15 @@ At this point, you could change eval chunk options to TRUE. You can remove  the 
 usethis::use_lifecycle_badge("experimental")
 ```
 
+## Phase 2: Listen & iterate 🚧
 
-## Phase 2: Listen & iterate 🚧 
-
-Try to get feedback from experts on API, implementation, default decisions.  Is there already work that solves this problem? 
-
+Try to get feedback from experts on API, implementation, default decisions. Is there already work that solves this problem?
 
 ## Phase 3: Let things settle
 
-### Settle on examples.  Put them in the roxygen skeleton and readme. 🚧 
+### Settle on examples. Put them in the roxygen skeleton and readme. 🚧
 
-### Written formal tests of functions? 🚧 
-
+### Written formal tests of functions? 🚧
 
 That would look like this...
 
@@ -639,25 +742,23 @@ test_that("calc frequency works", {
 })
 ```
 
-
 ```{r, eval = F}
 knitrExtra:::chunk_to_tests_testthat("test_calc_frequency_works")
 ```
 
+### Have you worked added a description and author information in the DESCRIPTION file? 🚧
 
-### Have you worked added a description and author information in the DESCRIPTION file? 🚧 
-
-### Addressed *all* notes, warnings and errors. 🚧 
+### Addressed *all* notes, warnings and errors. 🚧
 
 ## Promote to wider audience...
 
-### Package website built? 🚧 
+### Package website built? 🚧
 
-### Package website deployed? 🚧 
+### Package website deployed? 🚧
 
 ## Phase 3: Harden/commit
 
-### Submit to CRAN? Or don't.  🚧 
+### Submit to CRAN? Or don't. 🚧
 
 # Appendix: Reports, Environment
 
@@ -712,6 +813,3 @@ gguke:::lyric_chord_df_to_chart(a_cool_song22)
 
 
 ```
-
-
-
