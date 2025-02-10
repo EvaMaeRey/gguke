@@ -15,12 +15,14 @@
     - [step 1. computation (will be left join of a chord
       library)](#step-1-computation-will-be-left-join-of-a-chord-library)
     - [step 2. pass to ggproto](#step-2-pass-to-ggproto)
-    - [step 3. write geom_chord](#step-3-write-geom_chord)
+- [write layer](#write-layer)
   - [then we need a **fret board**.](#then-we-need-a-fret-board)
-    - [make it once](#make-it-once)
-    - [looks good; make it a function](#looks-good-make-it-a-function)
+  - [move away from using facet](#move-away-from-using-facet)
+    - [step 3. update geom_chord/stat chord with position
+      wrap](#step-3-update-geom_chordstat-chord-with-position-wrap)
 - [maybe a position that wraps by
   row](#maybe-a-position-that-wraps-by-row)
+  - [and geom Lyric](#and-geom-lyric)
   - [from **lyric-chord data frame to
     chart**…](#from-lyric-chord-data-frame-to-chart)
     - [use a lyrics-chord data frame.](#use-a-lyrics-chord-data-frame)
@@ -336,11 +338,10 @@ StatUkefingers <- ggplot2::ggproto(
                              wrap = after_stat(row)))
 ```
 
-### step 3. write geom_chord
+# write layer
 
 ``` r
 library(statexpress)
-
 
 stat_chord <- function(...){
   
@@ -358,33 +359,12 @@ geom_chord_text <- function(...){
   
     qlayer(stat = StatUkefingers,
            geom = qproto_update(GeomText, 
-                                aes(size = 10)),...)
+                                aes(size = 10)), ...)
 
 }
 ```
 
 ``` r
-tribble(~lyric, ~chord_name,
-"Mary had a little lamb,",  "CM",   
-"little lamb,", "GM",
-"little lamb.", "CM",
-"Mary had a little lamb...",    "CM") %>% 
-  ggplot() + 
-  scale_color_viridis_c() +
-  aes(chord = chord_name) + 
-  geom_chord(fill = "white") +
-  geom_chord(alpha = .6, color = "black") + 
-  geom_chord_text(color = "black", size = 10) + 
-  facet_wrap(~fct_inorder(lyric)) + 
-  scale_y_reverse() + 
-  coord_equal(xlim = c(1,4), ylim = c(4, 1))
-```
-
-![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
-
-``` r
-
-
 
 tribble(~lyric, ~chord_name,
 "It goes like this, the",   "CM",   
@@ -404,30 +384,9 @@ tribble(~lyric, ~chord_name,
   scale_x_continuous(expand = expansion(.2)) 
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ## then we need a **fret board**.
-
-### make it once
-
-``` r
-library(ggplot2)
-ggplot() + 
-  annotate(geom = "segment", x = 1:4, y = 0, 
-           xend = 1:4, yend = 5, linewidth = 3,
-  lineend = "round") + 
-  annotate(geom = "segment", y = 0:4, 
-           yend = 0:4, x = 1, xend = 4, linewidth = 3) + 
-  scale_y_reverse() + 
-  scale_x_continuous(expand = expansion(.2)) +
-  # theme_void() + 
-  coord_equal() +
-  scale_fill_viridis_c(limits = c(1,4), guide = F)
-```
-
-![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
-
-### looks good; make it a function
 
 ``` r
 strings <- data.frame(x = 1:4, y = 0, 
@@ -436,9 +395,9 @@ strings <- data.frame(x = 1:4, y = 0,
 frets <- data.frame(y = 0:4, 
            yend = 0:4, x = 1, xend = 4, lineend = "butt")
 
-fretboard <- bind_rows(strings, frets)
+df_fretboard <- bind_rows(strings, frets)
 
-fretboard %>% 
+df_fretboard %>% 
   ggplot() + 
   aes(x = x, y = y, yend = yend, xend = xend) + 
   geom_segment() + 
@@ -453,7 +412,7 @@ compute_fretboard <- function(data, scales){
   
   data %>% 
     mutate(phrase = row_number()) %>% 
-    crossing(fretboard)
+    crossing(df_fretboard)
   
 }
 
@@ -477,8 +436,9 @@ cars |> slice(1:3) |>
 
 StatFretboard <- ggproto("StatFretboard", Stat, 
                          compute_panel = compute_fretboard,
-                         default_aes = aes(wrap = after_stat(phrase),
-                                           color = after_stat(phrase))
+                         default_aes = aes(wrap = after_stat(phrase)#,
+                                           # color = after_stat(phrase)
+                                           )
                          )
 
 compute_layer_wrap <- function(data, params, panel) {
@@ -490,8 +450,6 @@ compute_layer_wrap <- function(data, params, panel) {
     
     range_x <- 4
     range_y <- 6
-    # if(range_x == 0){range_x <- 1}
-    # if(range_y == 0){range_y <- 1}
     
     ggplot2::transform_position(
       df = data,
@@ -509,113 +467,48 @@ position_wrap <- function() {
   ggproto(NULL, PositionWrap)
 }
 
+coord_page <- function(...){coord_trans(y = "reverse", ...)}
 
 ggplot(cars |> slice(1:4)) + 
   geom_segment(stat = StatFretboard, position = "wrap") + 
-  coord_trans(y = "reverse")
+  coord_page()
 ```
 
 ![](README_files/figure-gfm/uke_fretboard-2.png)<!-- -->
 
 ``` r
   
-layer_data()
-#>     colour wrap PANEL group phrase    x         y xend      yend lineend
-#> 1  #132B43    1     1    -1      1 0.25 0.0000000 0.25 0.8333333   round
-#> 2  #132B43    1     1    -1      1 0.25 0.0000000 1.00 0.0000000    butt
-#> 3  #132B43    1     1    -1      1 0.25 0.1666667 1.00 0.1666667    butt
-#> 4  #132B43    1     1    -1      1 0.25 0.3333333 1.00 0.3333333    butt
-#> 5  #132B43    1     1    -1      1 0.25 0.5000000 1.00 0.5000000    butt
-#> 6  #132B43    1     1    -1      1 0.25 0.6666667 1.00 0.6666667    butt
-#> 7  #132B43    1     1    -1      1 0.50 0.0000000 0.50 0.8333333   round
-#> 8  #132B43    1     1    -1      1 0.75 0.0000000 0.75 0.8333333   round
-#> 9  #132B43    1     1    -1      1 1.00 0.0000000 1.00 0.8333333   round
-#> 10 #28547A    2     1    -1      2 1.25 0.0000000 1.25 0.8333333   round
-#> 11 #28547A    2     1    -1      2 1.25 0.0000000 2.00 0.0000000    butt
-#> 12 #28547A    2     1    -1      2 1.25 0.1666667 2.00 0.1666667    butt
-#> 13 #28547A    2     1    -1      2 1.25 0.3333333 2.00 0.3333333    butt
-#> 14 #28547A    2     1    -1      2 1.25 0.5000000 2.00 0.5000000    butt
-#> 15 #28547A    2     1    -1      2 1.25 0.6666667 2.00 0.6666667    butt
-#> 16 #28547A    2     1    -1      2 1.50 0.0000000 1.50 0.8333333   round
-#> 17 #28547A    2     1    -1      2 1.75 0.0000000 1.75 0.8333333   round
-#> 18 #28547A    2     1    -1      2 2.00 0.0000000 2.00 0.8333333   round
-#> 19 #3E81B7    3     1    -1      3 2.25 0.0000000 2.25 0.8333333   round
-#> 20 #3E81B7    3     1    -1      3 2.25 0.0000000 3.00 0.0000000    butt
-#> 21 #3E81B7    3     1    -1      3 2.25 0.1666667 3.00 0.1666667    butt
-#> 22 #3E81B7    3     1    -1      3 2.25 0.3333333 3.00 0.3333333    butt
-#> 23 #3E81B7    3     1    -1      3 2.25 0.5000000 3.00 0.5000000    butt
-#> 24 #3E81B7    3     1    -1      3 2.25 0.6666667 3.00 0.6666667    butt
-#> 25 #3E81B7    3     1    -1      3 2.50 0.0000000 2.50 0.8333333   round
-#> 26 #3E81B7    3     1    -1      3 2.75 0.0000000 2.75 0.8333333   round
-#> 27 #3E81B7    3     1    -1      3 3.00 0.0000000 3.00 0.8333333   round
-#> 28 #56B1F7    4     1    -1      4 0.25 1.0000000 0.25 1.8333333   round
-#> 29 #56B1F7    4     1    -1      4 0.25 1.0000000 1.00 1.0000000    butt
-#> 30 #56B1F7    4     1    -1      4 0.25 1.1666667 1.00 1.1666667    butt
-#> 31 #56B1F7    4     1    -1      4 0.25 1.3333333 1.00 1.3333333    butt
-#> 32 #56B1F7    4     1    -1      4 0.25 1.5000000 1.00 1.5000000    butt
-#> 33 #56B1F7    4     1    -1      4 0.25 1.6666667 1.00 1.6666667    butt
-#> 34 #56B1F7    4     1    -1      4 0.50 1.0000000 0.50 1.8333333   round
-#> 35 #56B1F7    4     1    -1      4 0.75 1.0000000 0.75 1.8333333   round
-#> 36 #56B1F7    4     1    -1      4 1.00 1.0000000 1.00 1.8333333   round
-#>    linewidth linetype alpha
-#> 1        0.5        1    NA
-#> 2        0.5        1    NA
-#> 3        0.5        1    NA
-#> 4        0.5        1    NA
-#> 5        0.5        1    NA
-#> 6        0.5        1    NA
-#> 7        0.5        1    NA
-#> 8        0.5        1    NA
-#> 9        0.5        1    NA
-#> 10       0.5        1    NA
-#> 11       0.5        1    NA
-#> 12       0.5        1    NA
-#> 13       0.5        1    NA
-#> 14       0.5        1    NA
-#> 15       0.5        1    NA
-#> 16       0.5        1    NA
-#> 17       0.5        1    NA
-#> 18       0.5        1    NA
-#> 19       0.5        1    NA
-#> 20       0.5        1    NA
-#> 21       0.5        1    NA
-#> 22       0.5        1    NA
-#> 23       0.5        1    NA
-#> 24       0.5        1    NA
-#> 25       0.5        1    NA
-#> 26       0.5        1    NA
-#> 27       0.5        1    NA
-#> 28       0.5        1    NA
-#> 29       0.5        1    NA
-#> 30       0.5        1    NA
-#> 31       0.5        1    NA
-#> 32       0.5        1    NA
-#> 33       0.5        1    NA
-#> 34       0.5        1    NA
-#> 35       0.5        1    NA
-#> 36       0.5        1    NA
 
 geom_fretboard <- function(...){geom_segment(stat = StatFretboard, position = "wrap", ...)}
 ```
 
-``` r
-# old stuff
-tribble(~lyric, ~chord_name,
-"Mary had a little lamb,",  "CM",   
-"little lamb,", "GM",
-"little lamb.", "CM",
-"Mary had a little lamb...",    "CM") %>% 
-  gguke() + 
-  scale_color_viridis_c() +
-  aes(chord = chord_name) + 
-  geom_chord(fill = "white") +
-  geom_chord(alpha = .6, color = "black") + 
-  geom_chord_text(color = "black", size = 10) + 
-  facet_wrap(~fct_inorder(lyric))
-```
+## move away from using facet
 
-🤔 maybe gguke() would be better 🤔 maybe a coord_uke could be a
-long-term goal.
+### step 3. update geom_chord/stat chord with position wrap
+
+``` r
+library(statexpress)
+
+stat_chord <- function(...){
+  
+  qlayer(stat = StatUkefingers,
+         geom = qproto_update(GeomPoint, 
+                              aes(fill = "white", 
+                                  size = 15, 
+                                  shape = 21)), position = "wrap", ...)
+  
+}
+
+geom_chord <- stat_chord
+
+geom_chord_text <- function(...){
+  
+    qlayer(stat = StatUkefingers,
+           geom = qproto_update(GeomText, 
+                                aes(size = 10)), position = "wrap", ...)
+
+}
+```
 
 # maybe a position that wraps by row
 
@@ -632,15 +525,45 @@ tribble(~lyric, ~chord_name,
   aes(chord = chord_name) + 
   geom_vline(xintercept = c(0,6,12,18)/6, color = "lightgrey") +
   geom_fretboard() +
-  geom_chord(fill = "white", position = "wrap") +
-  coord_trans(y = "reverse") +
-  geom_chord(alpha = .6, color = "black", position = "wrap") + 
-  geom_chord_text(color = "black", size = 10, position = "wrap") + 
+  geom_chord(fill = "white") +
+  coord_page() +  # coord_page
+  geom_chord(alpha = .7) + 
+  scale_fill_viridis_c() +
+  geom_chord_text() + 
   geom_label(aes(label = lyric, wrap = row, x = 1, y = 0), vjust = 0, hjust = 0, 
-            position = "wrap", fill = "transparent", linewidth = 0)
+             position = "wrap", fill = "transparent", linewidth = 0)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+
+## and geom Lyric
+
+``` r
+compute_panel_lyric <- function(data, scales){
+  
+  data |> 
+    mutate(row = row_number()) |>
+    mutate(x = 1, y = 0) |>
+    mutate(label = lyric)
+  
+}
+
+
+geom_lyric <- function(...){
+  
+  qlayer(geom = qproto_update(GeomLabel, 
+                              aes(vjust = 0, hjust = 0, 
+                                  position = "wrap", fill = "transparent", 
+                                  linewidth = 0)),
+         stat = qstat(compute_panel = compute_panel_lyric,
+                      default_aes = aes(wrap = after_stat(row))),
+         position = "wrap",
+         ...
+           )
+  
+  
+}
+```
 
 ``` r
 tibble::tribble(~lyric, ~chord_name,
@@ -667,18 +590,18 @@ NA, "Dm",
 NA, "Am",
 NA, "Dm",
 NA, "EM")  %>% 
+  mutate(row = row_number()) %>% 
   ggplot() + 
-  scale_color_viridis_c() +
-  aes(chord = chord_name) + 
-  stamp_fretboard() +
+  aes(chord = chord_name, lyric = lyric) + 
+  geom_fretboard() +
+  coord_page() +
   geom_chord(fill = "white") +
   geom_chord(alpha = .6, color = "black") + 
-  geom_chord_text(color = "black", size = 10) + 
-  facet_wrap(~fct_inorder(lyric)) + 
-  scale_y_reverse() + 
-  coord_equal(xlim = c(1,4), ylim = c(4, 1)) + 
-  theme_void(base_size = 15)
+  geom_chord_text(color = "black", size = 10) + NULL +
+  geom_lyric()
 ```
+
+![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 ``` r
 knitrExtra:::chunk_to_r("uke_fretboard")

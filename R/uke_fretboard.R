@@ -4,9 +4,9 @@ strings <- data.frame(x = 1:4, y = 0,
 frets <- data.frame(y = 0:4, 
            yend = 0:4, x = 1, xend = 4, lineend = "butt")
 
-fretboard <- bind_rows(strings, frets)
+df_fretboard <- bind_rows(strings, frets)
 
-fretboard %>% 
+df_fretboard %>% 
   ggplot() + 
   aes(x = x, y = y, yend = yend, xend = xend) + 
   geom_segment() + 
@@ -16,7 +16,7 @@ compute_fretboard <- function(data, scales){
   
   data %>% 
     mutate(phrase = row_number()) %>% 
-    crossing(fretboard)
+    crossing(df_fretboard)
   
 }
 
@@ -26,8 +26,9 @@ cars |> slice(1:3) |>
 
 StatFretboard <- ggproto("StatFretboard", Stat, 
                          compute_panel = compute_fretboard,
-                         default_aes = aes(wrap = after_stat(phrase),
-                                           color = after_stat(phrase))
+                         default_aes = aes(wrap = after_stat(phrase)#,
+                                           # color = after_stat(phrase)
+                                           )
                          )
 
 compute_layer_wrap <- function(data, params, panel) {
@@ -39,8 +40,6 @@ compute_layer_wrap <- function(data, params, panel) {
     
     range_x <- 4
     range_y <- 6
-    # if(range_x == 0){range_x <- 1}
-    # if(range_y == 0){range_y <- 1}
     
     ggplot2::transform_position(
       df = data,
@@ -58,11 +57,11 @@ position_wrap <- function() {
   ggproto(NULL, PositionWrap)
 }
 
+coord_page <- function(...){coord_trans(y = "reverse", ...)}
 
 ggplot(cars |> slice(1:4)) + 
   geom_segment(stat = StatFretboard, position = "wrap") + 
-  coord_trans(y = "reverse")
+  coord_page()
   
-layer_data()
 
 geom_fretboard <- function(...){geom_segment(stat = StatFretboard, position = "wrap", ...)}

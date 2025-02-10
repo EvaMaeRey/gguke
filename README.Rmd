@@ -272,11 +272,11 @@ StatUkefingers <- ggplot2::ggproto(
                              wrap = after_stat(row)))
 ```
 
-### step 3. write geom_chord
+
+# write layer
 
 ```{r}
 library(statexpress)
-
 
 stat_chord <- function(...){
   
@@ -294,28 +294,14 @@ geom_chord_text <- function(...){
   
     qlayer(stat = StatUkefingers,
            geom = qproto_update(GeomText, 
-                                aes(size = 10)),...)
+                                aes(size = 10)), ...)
 
 }
 ```
 
+
+
 ```{r, fig.width=10, fig.height=10, warning=F}
-tribble(~lyric, ~chord_name,
-"Mary had a little lamb,",	"CM",	
-"little lamb,",	"GM",
-"little lamb.",	"CM",
-"Mary had a little lamb...",	"CM") %>% 
-  ggplot() + 
-  scale_color_viridis_c() +
-  aes(chord = chord_name) + 
-  geom_chord(fill = "white") +
-  geom_chord(alpha = .6, color = "black") + 
-  geom_chord_text(color = "black", size = 10) + 
-  facet_wrap(~fct_inorder(lyric)) + 
-  scale_y_reverse() + 
-  coord_equal(xlim = c(1,4), ylim = c(4, 1))
-
-
 
 tribble(~lyric, ~chord_name,
 "It goes like this, the",	"CM",	
@@ -337,25 +323,6 @@ tribble(~lyric, ~chord_name,
 
 ## then we need a **fret board**.
 
-### make it once
-
-```{r}
-library(ggplot2)
-ggplot() + 
-  annotate(geom = "segment", x = 1:4, y = 0, 
-           xend = 1:4, yend = 5, linewidth = 3,
-  lineend = "round") + 
-  annotate(geom = "segment", y = 0:4, 
-           yend = 0:4, x = 1, xend = 4, linewidth = 3) + 
-  scale_y_reverse() + 
-  scale_x_continuous(expand = expansion(.2)) +
-  # theme_void() + 
-  coord_equal() +
-  scale_fill_viridis_c(limits = c(1,4), guide = F)
-```
-
-### looks good; make it a function
-
 ```{r uke_fretboard}
 strings <- data.frame(x = 1:4, y = 0, 
            xend = 1:4, yend = 5, lineend = "round")
@@ -363,9 +330,9 @@ strings <- data.frame(x = 1:4, y = 0,
 frets <- data.frame(y = 0:4, 
            yend = 0:4, x = 1, xend = 4, lineend = "butt")
 
-fretboard <- bind_rows(strings, frets)
+df_fretboard <- bind_rows(strings, frets)
 
-fretboard %>% 
+df_fretboard %>% 
   ggplot() + 
   aes(x = x, y = y, yend = yend, xend = xend) + 
   geom_segment() + 
@@ -375,7 +342,7 @@ compute_fretboard <- function(data, scales){
   
   data %>% 
     mutate(phrase = row_number()) %>% 
-    crossing(fretboard)
+    crossing(df_fretboard)
   
 }
 
@@ -385,8 +352,9 @@ cars |> slice(1:3) |>
 
 StatFretboard <- ggproto("StatFretboard", Stat, 
                          compute_panel = compute_fretboard,
-                         default_aes = aes(wrap = after_stat(phrase),
-                                           color = after_stat(phrase))
+                         default_aes = aes(wrap = after_stat(phrase)#,
+                                           # color = after_stat(phrase)
+                                           )
                          )
 
 compute_layer_wrap <- function(data, params, panel) {
@@ -398,8 +366,6 @@ compute_layer_wrap <- function(data, params, panel) {
     
     range_x <- 4
     range_y <- 6
-    # if(range_x == 0){range_x <- 1}
-    # if(range_y == 0){range_y <- 1}
     
     ggplot2::transform_position(
       df = data,
@@ -417,34 +383,47 @@ position_wrap <- function() {
   ggproto(NULL, PositionWrap)
 }
 
+coord_page <- function(...){coord_trans(y = "reverse", ...)}
 
 ggplot(cars |> slice(1:4)) + 
   geom_segment(stat = StatFretboard, position = "wrap") + 
-  coord_trans(y = "reverse")
+  coord_page()
   
-layer_data()
 
 geom_fretboard <- function(...){geom_segment(stat = StatFretboard, position = "wrap", ...)}
 ```
 
-```{r, eval = F}
-# old stuff
-tribble(~lyric, ~chord_name,
-"Mary had a little lamb,",	"CM",	
-"little lamb,",	"GM",
-"little lamb.",	"CM",
-"Mary had a little lamb...",	"CM") %>% 
-  gguke() + 
-  scale_color_viridis_c() +
-  aes(chord = chord_name) + 
-  geom_chord(fill = "white") +
-  geom_chord(alpha = .6, color = "black") + 
-  geom_chord_text(color = "black", size = 10) + 
-  facet_wrap(~fct_inorder(lyric))
 
+## move away from using facet
+
+### step 3. update geom_chord/stat chord with position wrap
+
+```{r}
+library(statexpress)
+
+stat_chord <- function(...){
+  
+  qlayer(stat = StatUkefingers,
+         geom = qproto_update(GeomPoint, 
+                              aes(fill = "white", 
+                                  size = 15, 
+                                  shape = 21)), position = "wrap", ...)
+  
+}
+
+geom_chord <- stat_chord
+
+geom_chord_text <- function(...){
+  
+    qlayer(stat = StatUkefingers,
+           geom = qproto_update(GeomText, 
+                                aes(size = 10)), position = "wrap", ...)
+
+}
 ```
 
-🤔 maybe gguke() would be better 🤔 maybe a coord_uke could be a long-term goal.
+
+
 
 
 # maybe a position that wraps by row
@@ -462,17 +441,51 @@ tribble(~lyric, ~chord_name,
   aes(chord = chord_name) + 
   geom_vline(xintercept = c(0,6,12,18)/6, color = "lightgrey") +
   geom_fretboard() +
-  geom_chord(fill = "white", position = "wrap") +
-  coord_trans(y = "reverse") +
-  geom_chord(alpha = .6, color = "black", position = "wrap") + 
-  geom_chord_text(color = "black", size = 10, position = "wrap") + 
+  geom_chord(fill = "white") +
+  coord_page() +  # coord_page
+  geom_chord(alpha = .7) + 
+  scale_fill_viridis_c() +
+  geom_chord_text() + 
   geom_label(aes(label = lyric, wrap = row, x = 1, y = 0), vjust = 0, hjust = 0, 
-            position = "wrap", fill = "transparent", linewidth = 0)
+             position = "wrap", fill = "transparent", linewidth = 0)
 
 ```
 
 
-```{r fig.width=20, fig.height=20, eval = F}
+## and geom Lyric
+
+```{r}
+compute_panel_lyric <- function(data, scales){
+  
+  data |> 
+    mutate(row = row_number()) |>
+    mutate(x = 1, y = 0) |>
+    mutate(label = lyric)
+  
+}
+
+
+geom_lyric <- function(...){
+  
+  qlayer(geom = qproto_update(GeomLabel, 
+                              aes(vjust = 0, hjust = 0, 
+                                  position = "wrap", fill = "transparent", 
+                                  linewidth = 0)),
+         stat = qstat(compute_panel = compute_panel_lyric,
+                      default_aes = aes(wrap = after_stat(row))),
+         position = "wrap",
+         ...
+           )
+  
+  
+}
+
+
+```
+
+
+
+```{r fig.width=10, fig.height=20, eval = T}
 tibble::tribble(~lyric, ~chord_name,
 "You're a", NA,                          
 "mean one,     Mister", "Am",
@@ -497,17 +510,15 @@ NA, "Dm",
 NA, "Am",
 NA, "Dm",
 NA, "EM")  %>% 
+  mutate(row = row_number()) %>% 
   ggplot() + 
-  scale_color_viridis_c() +
-  aes(chord = chord_name) + 
-  stamp_fretboard() +
+  aes(chord = chord_name, lyric = lyric) + 
+  geom_fretboard() +
+  coord_page() +
   geom_chord(fill = "white") +
   geom_chord(alpha = .6, color = "black") + 
-  geom_chord_text(color = "black", size = 10) + 
-  facet_wrap(~fct_inorder(lyric)) + 
-  scale_y_reverse() + 
-  coord_equal(xlim = c(1,4), ylim = c(4, 1)) + 
-  theme_void(base_size = 15)
+  geom_chord_text(color = "black", size = 10) + NULL +
+  geom_lyric()
 
 
 ```
